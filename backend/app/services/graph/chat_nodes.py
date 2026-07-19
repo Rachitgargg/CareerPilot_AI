@@ -16,6 +16,9 @@ def load_memory_node(state: dict) -> dict:
         try:
             with open(history_path, "r", encoding="utf-8") as f:
                 history = json.load(f)
+            if not isinstance(history, list):
+                logger.warning(f"Chat history is not a list for session {session_id}. Resetting.")
+                history = []
             logger.info(f"[LangGraph Node] Loaded {len(history)} messages from history.")
             return {"chat_history": history}
         except Exception as e:
@@ -84,18 +87,19 @@ def tool_router_node(state: dict) -> dict:
     session_id = state["session_id"]
     user_message = state["user_message"]
     needed_tools = state.get("needed_tools") or []
+    intent = state.get("intent", "general")
     
     contexts = []
     sources = []
     
     for tool_name in needed_tools:
         if tool_name == "load_profile":
-            result = CHAT_TOOLS["load_profile"](session_id)
+            result = CHAT_TOOLS["load_profile"](session_id, intent=intent)
             if result:
                 contexts.append(result)
                 sources.append("career_profile")
         elif tool_name == "load_analysis":
-            result = CHAT_TOOLS["load_analysis"](session_id)
+            result = CHAT_TOOLS["load_analysis"](session_id, intent=intent)
             if result:
                 contexts.append(result)
                 sources.append("master_analysis")

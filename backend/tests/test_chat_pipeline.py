@@ -242,3 +242,37 @@ def test_chat_intent_routing_resume_question(
     assert "career_profile" in data["sources"]
     assert "resume" in data["sources"]
     assert "master_analysis" not in data["sources"]
+
+
+@patch("app.services.llm.ai_service.detect_intent_with_groq")
+@patch("app.services.llm.ai_service.generate_chat_response_with_groq")
+def test_chat_corrupted_history_non_list(
+    mock_generate_response,
+    mock_detect_intent,
+    dummy_session_and_profile
+):
+    session_id = dummy_session_and_profile
+    session_dir = settings.STORAGE_DIR / "sessions" / session_id
+    
+    # Save corrupted history as a dictionary
+    corrupted_data = {"key": "not a list"}
+    history_path = session_dir / "chat_history.json"
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(corrupted_data, f)
+        
+    mock_detect_intent.return_value = "general"
+    mock_generate_response.return_value = "Recovered from corrupted history."
+    
+    response = client.post(
+        f"/api/v1/chat/{session_id}",
+        json={"message": "Retry message"}
+    )
+    
+    assert response.status_code == 200
+    assert response.json()["response"] == "Recovered from corrupted history."
+    
+    # Verify that the history was reset to a list and saved correctly
+    with open(history_path, "r", encoding="utf-8") as f:
+        history = json.load(f)
+    assert isinstance(history, list)
+    assert len(history) == 2

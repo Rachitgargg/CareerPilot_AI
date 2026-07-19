@@ -4,9 +4,9 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.services.vector.retriever import retrieve_relevant_chunks
 
-def load_career_profile(session_id: str, query: str = None) -> Optional[str]:
+def load_career_profile(session_id: str, intent: str = None) -> Optional[str]:
     """
-    Tool to load profile.json from session storage.
+    Tool to load and slice profile.json from session storage based on detected intent.
     """
     profile_path = settings.STORAGE_DIR / "sessions" / session_id / "profile.json"
     if not profile_path.exists():
@@ -15,14 +15,54 @@ def load_career_profile(session_id: str, query: str = None) -> Optional[str]:
     try:
         with open(profile_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return f"User Career Profile Details:\n{json.dumps(data, indent=2)}"
+            
+        # Perform selective slicing to optimize prompt size
+        sliced_data = {}
+        if intent == "skills":
+            sliced_data = {
+                "summary": data.get("summary"),
+                "skills": data.get("skills")
+            }
+        elif intent == "projects":
+            sliced_data = {
+                "summary": data.get("summary"),
+                "projects": data.get("projects"),
+                "skills": data.get("skills")
+            }
+        elif intent == "resume_question":
+            sliced_data = {
+                "summary": data.get("summary"),
+                "experience": data.get("experience"),
+                "skills": data.get("skills")
+            }
+        elif intent in ("roadmap", "career_advice"):
+            sliced_data = {
+                "summary": data.get("summary"),
+                "experience": data.get("experience"),
+                "skills": data.get("skills"),
+                "career_interests": data.get("career_interests")
+            }
+        elif intent in ("ats", "interview"):
+            sliced_data = {
+                "summary": data.get("summary"),
+                "experience": data.get("experience"),
+                "skills": data.get("skills")
+            }
+        else: # general / unknown
+            sliced_data = {
+                "summary": data.get("summary"),
+                "personal": data.get("personal"),
+                "skills": data.get("skills")
+            }
+            
+        return f"User Career Profile Details (relevant to query):\n{json.dumps(sliced_data, indent=2)}"
     except Exception as e:
         logger.error(f"Error loading career profile: {str(e)}")
         return None
 
-def load_master_analysis(session_id: str, query: str = None) -> Optional[str]:
+def load_master_analysis(session_id: str, intent: str = None) -> Optional[str]:
     """
-    Tool to load master_analysis.json from session storage.
+    Tool to load and slice master_analysis.json from session storage based on detected intent.
     """
     analysis_path = settings.STORAGE_DIR / "sessions" / session_id / "master_analysis.json"
     if not analysis_path.exists():
@@ -31,7 +71,28 @@ def load_master_analysis(session_id: str, query: str = None) -> Optional[str]:
     try:
         with open(analysis_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return f"User Master Career Analysis Details:\n{json.dumps(data, indent=2)}"
+            
+        # Perform selective slicing to optimize prompt size
+        sliced_data = {}
+        if intent == "ats":
+            sliced_data = {"ats_analysis": data.get("ats_analysis")}
+        elif intent == "skills":
+            sliced_data = {"skills_gap": data.get("skills_gap")}
+        elif intent == "projects":
+            sliced_data = {"project_recommendations": data.get("project_recommendations")}
+        elif intent == "roadmap":
+            sliced_data = {"learning_roadmap": data.get("learning_roadmap")}
+        elif intent == "interview":
+            sliced_data = {"interview_focus": data.get("interview_focus")}
+        elif intent == "career_advice":
+            sliced_data = {
+                "career_summary": data.get("career_summary"),
+                "career_recommendations": data.get("career_recommendations")
+            }
+        else: # general / unknown
+            sliced_data = {"career_summary": data.get("career_summary")}
+            
+        return f"User Master Career Analysis Details (relevant to query):\n{json.dumps(sliced_data, indent=2)}"
     except Exception as e:
         logger.error(f"Error loading master analysis: {str(e)}")
         return None
