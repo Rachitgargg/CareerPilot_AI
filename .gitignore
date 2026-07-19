@@ -62,4 +62,6 @@ venv.bak/
 
 # User uploads
 backend/uploads/
+backend/storage/
+
 

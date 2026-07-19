@@ -16,19 +16,35 @@ backend/
 │   │   ├── config.py
 │   │   ├── logging.py
 │   │   └── __init__.py
+│   ├── prompts/
+│   │   └── resume_extraction.txt
 │   ├── schemas/
+│   │   ├── career_profile.py
 │   │   ├── health.py
 │   │   ├── upload.py
 │   │   └── __init__.py
 │   ├── services/
+│   │   ├── llm/
+│   │   │   ├── ai_service.py
+│   │   │   ├── embedding_client.py
+│   │   │   └── groq_client.py
 │   │   ├── parser/
 │   │   │   ├── pdf_parser.py
 │   │   │   └── text_cleaner.py
+│   │   ├── resume/
+│   │   │   ├── chunker.py
+│   │   │   ├── resume_extractor.py
+│   │   │   └── resume_pipeline.py
+│   │   ├── vector/
+│   │   │   ├── chroma_client.py
+│   │   │   └── retriever.py
 │   │   └── __init__.py
 │   ├── utils/
 │   │   └── __init__.py
 │   ├── main.py
 │   └── __init__.py
+├── storage/
+│   └── sessions/
 ├── uploads/
 ├── .env.example
 ├── main.py (entrypoint proxy)
@@ -61,7 +77,11 @@ Copy `.env.example` to a new `.env` file:
 ```bash
 cp .env.example .env
 ```
-Adjust configurations as needed. By default, it sets up host `0.0.0.0`, port `8000`, size limits at `10MB`, and active folders.
+Add the required API keys to your `.env` file:
+- `GROQ_API_KEY`: API key for Groq Cloud.
+- `GOOGLE_API_KEY`: API key for Google Gemini developer access.
+
+By default, the server configuration sets up host `0.0.0.0`, port `8000`, and file upload limits at `10MB`.
 
 ### 5. Run FastAPI Server
 Start the development server with hot-reload enabled:
@@ -69,6 +89,31 @@ Start the development server with hot-reload enabled:
 uvicorn app.main:app --reload --port 8000
 ```
 *(Alternatively, you can run `uvicorn main:app --reload --port 8000` via the top-level proxy).*
+
+---
+
+## Architecture: Resume Intelligence Layer
+
+Phase 2 builds a reusable, isolated, session-based career knowledge base pipeline:
+
+```text
+PDF Upload -> Text Extraction -> Text Cleaning
+                                      ↓
+                              Generate session_id (UUID)
+                                      ↓
+                             Groq Resume Extraction (JSON)
+                                      ↓
+                              Save profile.json
+                                      ↓
+                             ChromaDB Vector Store (sessions/{session_id}/chroma/)
+                                      ↓
+                         Gemini Document Embeddings
+```
+
+### Why a Hybrid Provider Model?
+1. **Groq (Llama-3.3-70b-versatile)**: Leveraged for its high-quality reasoning capabilities, structured JSON output speed, and reliability in converting unstructured resume text into a strict schema.
+2. **Google Gemini Embeddings (`models/text-embedding-004`)**: Used exclusively for generating semantic document embeddings. Using Gemini embeddings via API avoids running local transformer/PyTorch libraries, optimizing RAM and CPU usage so the application fits comfortably within Render's Free Tier limits.
+3. **ChromaDB**: Persisted locally on disk and isolated per user session under `storage/sessions/{session_id}/chroma/`. This prevents cross-user pollution and keeps database operations extremely lightweight.
 
 ---
 
@@ -102,10 +147,9 @@ Once the server is running, the interactive documentation is accessible at:
   ```json
   {
     "success": true,
-    "filename": "original_filename.pdf",
-    "pages": 2,
-    "characters": 6128,
-    "text": "...cleaned extracted text..."
+    "session_id": "3a078028-2b8e-4a6c-9418-842211e4bf5c",
+    "profile_created": true,
+    "chunks_created": 12
   }
   ```
 

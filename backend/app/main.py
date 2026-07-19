@@ -18,6 +18,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to create uploads directory: {str(e)}")
         
+    # Ensure storage and sessions directories exist
+    try:
+        sessions_dir = settings.STORAGE_DIR / "sessions"
+        sessions_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Verified storage sessions directory at: {sessions_dir}")
+    except Exception as e:
+        logger.error(f"Failed to create storage sessions directory: {str(e)}")
+        
     yield
     
     # Server shutdown events

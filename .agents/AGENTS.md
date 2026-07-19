@@ -124,6 +124,8 @@ Do not persist temporary PDFs.
 
 Do not persist generated chat responses.
 
+Generated AI outputs such as master_analysis.json must be cached and reused. Never regenerate unless the underlying resume/profile changes.
+
 ---
 
 ## Future Features

@@ -9,6 +9,15 @@ class Settings(BaseSettings):
     UPLOAD_FOLDER: str = "uploads"
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
     
+    # AI Providers Configuration
+    GROQ_API_KEY: str = ""
+    GOOGLE_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GOOGLE_EMBEDDING_MODEL: str = "models/text-embedding-004"
+    
+    # Storage Configuration
+    STORAGE_FOLDER: str = "storage"
+    
     # Configure loading settings from .env file
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -24,5 +33,9 @@ class Settings(BaseSettings):
     @property
     def UPLOAD_DIR(self) -> Path:
         return self.BASE_DIR / self.UPLOAD_FOLDER
+
+    @property
+    def STORAGE_DIR(self) -> Path:
+        return self.BASE_DIR / self.STORAGE_FOLDER
 
 settings = Settings()

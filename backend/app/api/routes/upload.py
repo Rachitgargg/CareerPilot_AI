@@ -9,6 +9,7 @@ from app.core.logging import logger
 from app.schemas.upload import UploadResponse
 from app.services.parser.pdf_parser import extract_text_from_pdf, PDFParsingError
 from app.services.parser.text_cleaner import clean_text
+from app.services.resume.resume_pipeline import process_resume
 
 router = APIRouter()
 
@@ -26,8 +27,9 @@ async def upload_resume(resume: UploadFile = File(...)):
     - Saves PDF temporarily with a generated UUID
     - Extracts PDF text using PyMuPDF (fitz)
     - Preprocesses/cleans text
+    - Runs Phase 2 pipeline: Groq Profile extraction, chunking, Gemini Embedding, ChromaDB storage
     - Deletes the temporary file from disk immediately
-    - Returns structured JSON response with text and metadata
+    - Returns session_id and metadata
     """
     logger.info(f"Upload received. Original filename: '{resume.filename}', content_type: '{resume.content_type}'")
     
@@ -63,6 +65,7 @@ async def upload_resume(resume: UploadFile = File(...)):
     # Ensure the destination directory exists
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+    session_id = str(uuid.uuid4())
     start_time = time.time()
     try:
         # 5. Save the file to uploads/ using threadpool
@@ -73,23 +76,29 @@ async def upload_resume(resume: UploadFile = File(...)):
         logger.info(f"Extracting text from PDF file: {temp_file_path}")
         raw_text, num_pages = await run_in_threadpool(extract_text_from_pdf, temp_file_path)
         
-        extraction_time = time.time() - start_time
-        logger.info(f"PDF extraction completed in {extraction_time:.4f} seconds.")
-        
         # 7. Clean text
         cleaned_text = clean_text(raw_text)
         
-        logger.info(
-            f"Processing success: file='{resume.filename}', pages={num_pages}, "
-            f"raw_chars={len(raw_text)}, cleaned_chars={len(cleaned_text)}"
+        if not cleaned_text.strip():
+            logger.warning(f"Cleaned text is empty for file: {resume.filename}")
+            raise HTTPException(status_code=422, detail="The PDF file does not contain any readable text.")
+            
+        # 8. Run Phase 2 Pipeline using threadpool
+        logger.info(f"Starting Phase 2 processing pipeline for session {session_id}...")
+        chunks_created = await run_in_threadpool(
+            process_resume,
+            session_id,
+            cleaned_text
         )
+        
+        processing_time = time.time() - start_time
+        logger.info(f"Completed Phase 2 processing pipeline in {processing_time:.4f} seconds.")
         
         return {
             "success": True,
-            "filename": resume.filename,
-            "pages": num_pages,
-            "characters": len(cleaned_text),
-            "text": cleaned_text
+            "session_id": session_id,
+            "profile_created": True,
+            "chunks_created": chunks_created
         }
         
     except PDFParsingError as e:
@@ -105,10 +114,11 @@ async def upload_resume(resume: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing the PDF file.")
         
     finally:
-        # 8. Always delete the temporary file from disk
+        # 9. Always delete the temporary file from disk
         if os.path.exists(temp_file_path):
             try:
                 os.remove(temp_file_path)
                 logger.info(f"Successfully deleted temporary file: {temp_file_path}")
             except Exception as e:
                 logger.error(f"Failed to delete temporary file '{temp_file_path}': {str(e)}")
+
