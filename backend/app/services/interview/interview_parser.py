@@ -94,3 +94,78 @@ def determine_interview_focus(
     focus["coding_topics"] = list(dict.fromkeys(focus["coding_topics"]))
     
     return focus
+
+
+def slice_interview_context(
+    profile: CareerProfile,
+    analysis: MasterAnalysis,
+    focus_areas: list
+) -> tuple[dict, dict]:
+    """
+    Slices the CareerProfile and MasterAnalysis to include only the required
+    sub-sections to minimize prompt size and avoid injecting the entire objects.
+    """
+    focus_lower = [f.lower() for f in focus_areas]
+    
+    # Check if technical focus
+    is_technical = any(
+        any(k in f for k in ["tech", "cod", "develop", "engineer", "system", "data", "algorithm", "python", "javascript", "sql"]) 
+        for f in focus_lower
+    )
+    # Check if behavioral focus
+    is_behavioral = any(
+        any(k in f for k in ["behav", "soft", "lead", "manage", "communication", "conflict"]) 
+        for f in focus_lower
+    )
+    
+    sliced_profile = {}
+    sliced_analysis = {}
+    
+    # Always include career summary if available
+    if profile.summary:
+        sliced_profile["summary"] = profile.summary
+    if analysis.career_summary:
+        sliced_analysis["career_summary"] = analysis.career_summary
+
+    if is_technical:
+        # Technical interview -> Technical resume chunks, Relevant MasterAnalysis (skills_gap, interview_focus) and Profile skills/projects
+        sliced_profile["skills"] = profile.skills.model_dump() if profile.skills else {}
+        sliced_profile["projects"] = [
+            {"name": p.name, "description": p.description, "technologies": p.technologies} 
+            for p in profile.projects
+        ] if profile.projects else []
+        
+        if analysis.skills_gap:
+            sliced_analysis["skills_gap"] = analysis.skills_gap.model_dump()
+        sliced_analysis["interview_focus"] = analysis.interview_focus
+        
+    elif is_behavioral:
+        # Behavioral interview -> Projects, Experience, and Strengths
+        sliced_profile["projects"] = [
+            {"name": p.name, "description": p.description} 
+            for p in profile.projects
+        ] if profile.projects else []
+        sliced_profile["experience"] = [
+            {"company": e.company, "role": e.role, "duration": e.duration, "description": e.description} 
+            for e in profile.experience
+        ] if profile.experience else []
+        
+        if analysis.ats_analysis:
+            sliced_analysis["strengths"] = analysis.ats_analysis.strengths
+            
+    else:
+        # General interview -> CareerProfile summary, MasterAnalysis summary, Education, Experience summary
+        sliced_profile["education"] = [
+            {"institution": edu.institution, "degree": edu.degree, "field": edu.field} 
+            for edu in profile.education
+        ] if profile.education else []
+        sliced_profile["experience"] = [
+            {"company": e.company, "role": e.role, "duration": e.duration} 
+            for e in profile.experience
+        ] if profile.experience else []
+        
+        if analysis.ats_analysis:
+            sliced_analysis["strengths"] = analysis.ats_analysis.strengths
+            sliced_analysis["weaknesses"] = analysis.ats_analysis.weaknesses
+            
+    return sliced_profile, sliced_analysis

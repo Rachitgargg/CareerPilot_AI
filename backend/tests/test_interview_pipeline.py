@@ -266,3 +266,72 @@ def test_interview_empty_target_role(dummy_session_and_profile_and_analysis):
     )
     assert res_ws.status_code == 400
     assert "Target role cannot be empty" in res_ws.json()["detail"]
+
+
+def test_context_slicing():
+    from app.schemas.career_profile import CareerProfile
+    from app.schemas.master_analysis import MasterAnalysis
+    from app.services.interview.interview_parser import slice_interview_context
+    
+    profile = CareerProfile.model_validate({
+        "personal": {"name": "Sliced Candidate"},
+        "skills": {
+            "programming_languages": ["Python"],
+            "frameworks": ["Django"]
+        },
+        "experience": [
+            {"company": "A", "role": "Dev", "description": "Long desc"}
+        ],
+        "projects": [
+            {"name": "Proj1", "description": "Proj desc"}
+        ],
+        "summary": "Full stack dev summary"
+    })
+    
+    analysis = MasterAnalysis.model_validate({
+        "career_summary": "Analysis career summary",
+        "ats_analysis": {
+            "score": 85,
+            "strengths": ["Python expertise"],
+            "weaknesses": ["None"],
+            "improvements": []
+        },
+        "skills_gap": {
+            "existing_skills": ["Python"],
+            "missing_skills": ["C++"],
+            "priority_skills": []
+        },
+        "project_recommendations": [],
+        "learning_roadmap": {
+            "next_30_days": [],
+            "next_90_days": [],
+            "long_term": []
+        },
+        "career_recommendations": [],
+        "interview_focus": ["Python coding"]
+    })
+    
+    # 1. Test technical focus slicing
+    sliced_p_tech, sliced_a_tech = slice_interview_context(profile, analysis, ["Python coding", "Systems design"])
+    assert "skills" in sliced_p_tech
+    assert "projects" in sliced_p_tech
+    assert "experience" not in sliced_p_tech
+    assert "skills_gap" in sliced_a_tech
+    assert "interview_focus" in sliced_a_tech
+    assert "strengths" not in sliced_a_tech
+    
+    # 2. Test behavioral focus slicing
+    sliced_p_beh, sliced_a_beh = slice_interview_context(profile, analysis, ["Leadership", "Behavioral management"])
+    assert "skills" not in sliced_p_beh
+    assert "projects" in sliced_p_beh
+    assert "experience" in sliced_p_beh
+    assert "skills_gap" not in sliced_a_beh
+    assert "strengths" in sliced_a_beh
+    
+    # 3. Test general/other focus slicing
+    sliced_p_gen, sliced_a_gen = slice_interview_context(profile, analysis, ["HR screen"])
+    assert "skills" not in sliced_p_gen
+    assert "projects" not in sliced_p_gen
+    assert "experience" in sliced_p_gen
+    assert "strengths" in sliced_a_gen
+    assert "weaknesses" in sliced_a_gen

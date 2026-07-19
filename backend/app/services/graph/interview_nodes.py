@@ -136,6 +136,7 @@ def generate_report_node(state: dict) -> dict:
     master_analysis = state.get("master_analysis")
     resume_context = state.get("resume_context")
     job_description = state.get("job_description")
+    interview_focus = state.get("interview_focus")
     
     logger.info(f"[Interview Node] Invoking Groq for interview coaching for session {session_id}")
     try:
@@ -144,6 +145,7 @@ def generate_report_node(state: dict) -> dict:
             analysis=master_analysis,
             resume_context=resume_context,
             target_role=target_role,
+            interview_focus=interview_focus,
             job_description=job_description
         )
         return {"report": report}

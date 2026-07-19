@@ -253,13 +253,15 @@ def generate_interview_coach(
     analysis: MasterAnalysis,
     resume_context: str,
     target_role: str,
+    interview_focus: Optional[dict] = None,
     job_description: Optional[str] = None
 ):
     """
-    Generate interview coach report comparing profile, analysis, and context against target role and optional job description.
+    Generate interview coach report comparing sliced profile, sliced analysis, and context against target role and optional job description.
     Uses Groq and returns a validated InterviewCoachReport.
     """
     from app.schemas.interview import InterviewCoachReport
+    from app.services.interview.interview_parser import slice_interview_context
     
     logger.info("Generating interview coach report using Groq...")
     
@@ -271,9 +273,30 @@ def generate_interview_coach(
         logger.error(f"Failed to load interview coach prompt template: {str(e)}")
         raise RuntimeError(f"Prompt template missing: {str(e)}")
         
+    # Calculate original sizes
+    full_profile_str = profile.model_dump_json()
+    full_analysis_str = analysis.model_dump_json() if analysis else ""
+    original_size = len(full_profile_str) + len(full_analysis_str)
+    
+    # Perform Context Slicing to minimize prompt size (Render Free Tier optimization)
+    focus_areas = interview_focus.get("focus_areas", []) if interview_focus else []
+    sliced_profile, sliced_analysis = slice_interview_context(profile, analysis, focus_areas)
+    
+    sliced_profile_str = json.dumps(sliced_profile, indent=2)
+    sliced_analysis_str = json.dumps(sliced_analysis, indent=2)
+    sliced_size = len(sliced_profile_str) + len(sliced_analysis_str)
+    
+    reduction = ((original_size - sliced_size) / original_size * 100) if original_size > 0 else 0
+    logger.info(
+        f"Context Slicing Complete | "
+        f"Original Context Size: {original_size} chars | "
+        f"Sliced Context Size: {sliced_size} chars | "
+        f"Size Reduction: {reduction:.2f}%"
+    )
+        
     user_prompt = template.format(
-        career_profile=profile.model_dump_json(indent=2),
-        master_analysis=analysis.model_dump_json(indent=2) if analysis else "No master analysis available.",
+        career_profile=sliced_profile_str,
+        master_analysis=sliced_analysis_str,
         resume_context=resume_context or "No additional resume excerpts available.",
         target_role=target_role,
         job_description=job_description or "Not provided."
