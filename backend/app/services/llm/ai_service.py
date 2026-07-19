@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from pathlib import Path
 from app.core.logging import logger
 from app.schemas.career_profile import CareerProfile
@@ -245,6 +246,69 @@ def generate_resume_tailoring(
     except Exception as e:
         logger.error(f"Validation of tailoring report failed: {str(e)}")
         raise ValueError(f"Generated tailoring report did not conform to schema: {str(e)}")
+
+
+def generate_interview_coach(
+    profile: CareerProfile,
+    analysis: MasterAnalysis,
+    resume_context: str,
+    target_role: str,
+    job_description: Optional[str] = None
+):
+    """
+    Generate interview coach report comparing profile, analysis, and context against target role and optional job description.
+    Uses Groq and returns a validated InterviewCoachReport.
+    """
+    from app.schemas.interview import InterviewCoachReport
+    
+    logger.info("Generating interview coach report using Groq...")
+    
+    prompt_path = Path(__file__).resolve().parent.parent.parent / "prompts" / "interview_coach.txt"
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            template = f.read()
+    except Exception as e:
+        logger.error(f"Failed to load interview coach prompt template: {str(e)}")
+        raise RuntimeError(f"Prompt template missing: {str(e)}")
+        
+    user_prompt = template.format(
+        career_profile=profile.model_dump_json(indent=2),
+        master_analysis=analysis.model_dump_json(indent=2) if analysis else "No master analysis available.",
+        resume_context=resume_context or "No additional resume excerpts available.",
+        target_role=target_role,
+        job_description=job_description or "Not provided."
+    )
+    
+    messages = [
+        {"role": "user", "content": user_prompt}
+    ]
+    
+    import time
+    start_time = time.time()
+    try:
+        response_str = groq_client.get_completion(
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.3
+        )
+        duration = time.time() - start_time
+        logger.info(f"Groq API interview coach call completed in {duration:.4f} seconds.")
+    except Exception as e:
+        logger.error(f"Groq API call failed for interview coach: {str(e)}")
+        raise RuntimeError(f"LLM interview coaching failed: {str(e)}")
+        
+    try:
+        parsed_json = json.loads(response_str)
+    except json.JSONDecodeError as e:
+        logger.error(f"Groq did not return valid JSON for interview coach: {str(e)}")
+        raise ValueError(f"Failed to parse LLM response as JSON: {str(e)}")
+        
+    try:
+        report = InterviewCoachReport.model_validate(parsed_json)
+        return report
+    except Exception as e:
+        logger.error(f"Validation of interview coach report failed: {str(e)}")
+        raise ValueError(f"Generated interview coach report did not conform to schema: {str(e)}")
 
 
 

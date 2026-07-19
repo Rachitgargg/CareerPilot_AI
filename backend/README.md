@@ -12,6 +12,7 @@ backend/
 │   │   │   ├── analysis.py
 │   │   │   ├── chat.py
 │   │   │   ├── health.py
+│   │   │   ├── interview.py
 │   │   │   ├── tailor.py
 │   │   │   └── upload.py
 │   │   └── __init__.py
@@ -24,6 +25,7 @@ backend/
 │   │   │   ├── intent_detection.txt
 │   │   │   ├── response_generation.txt
 │   │   │   └── system.txt
+│   │   ├── interview_coach.txt
 │   │   ├── master_analysis.txt
 │   │   ├── resume_extraction.txt
 │   │   └── resume_tailoring.txt
@@ -31,6 +33,7 @@ backend/
 │   │   ├── career_profile.py
 │   │   ├── chat.py
 │   │   ├── health.py
+│   │   ├── interview.py
 │   │   ├── master_analysis.py
 │   │   ├── upload.py
 │   │   ├── tailoring.py
@@ -44,9 +47,15 @@ backend/
 │   │   │   ├── chat_graph.py
 │   │   │   ├── chat_nodes.py
 │   │   │   ├── chat_tools.py
+│   │   │   ├── interview_graph.py
+│   │   │   ├── interview_nodes.py
 │   │   │   ├── nodes.py
 │   │   │   ├── tailoring_graph.py
 │   │   │   └── tailoring_nodes.py
+│   │   ├── interview/
+│   │   │   ├── interview_parser.py
+│   │   │   ├── interview_service.py
+│   │   │   └── __init__.py
 │   │   ├── tailoring/
 │   │   │   ├── job_parser.py
 │   │   │   ├── tailoring_service.py
@@ -249,6 +258,18 @@ curl -X POST "http://localhost:8000/upload" \
   ```
 - **Response Schema**: `ResumeTailoringReport` (containing `overall_match_score`, `breakdown`, `missing_keywords`, `bullet_point_improvements`, `final_recommendations`, etc.)
 
+### 6. AI Interview Coach
+- **Method**: `POST`
+- **Path**: `/api/v1/interview/{session_id}`
+- **Request Body**:
+  ```json
+  {
+    "target_role": "AI Engineer",
+    "job_description": "We are looking for a Python engineer..."
+  }
+  ```
+- **Response Schema**: `InterviewCoachReport` (containing `role`, `difficulty`, `readiness_score`, `strengths`, `weaknesses`, `focus_areas`, `technical_questions`, `behavioral_questions`, `hr_questions`, `coding_topics`, `preparation_plan`, `confidence_score`)
+
 ---
 
 ## Architecture: AI Career Chat Layer (Phase 4A)
@@ -284,3 +305,26 @@ START -> Load Profile -> Load Master Analysis -> Retrieve Resume Context -> Tail
 4. **Tailoring Analysis Node**: Makes a single Groq reasoning call (`llama-3.3-70b-versatile`) to generate a comprehensive matching breakdown, keyword gaps, and bullet point recommendations.
 5. **Validate Output Node**: Confirms schema alignment against the `ResumeTailoringReport` Pydantic model.
 6. **Persist Cache Node**: Caches the report under `storage/sessions/{session_id}/tailoring/{job_hash}.json` using a SHA-256 hash of the job description. Subsequent identical requests bypass Groq completely.
+
+---
+
+## Architecture: AI Interview Coach Engine (Phase 4C)
+
+Phase 4C builds a comprehensive interview coaching engine that prepares the candidate for a specific target role and optional job description using a linear LangGraph workflow:
+
+```text
+START -> Load Profile -> Load Master Analysis -> Retrieve Resume Context -> Determine Focus -> Generate Report -> Validate Report -> Persist Cache -> END
+```
+
+### Flow Components
+1. **Load Profile Node**: Loads raw JSON career details from `profile.json`.
+2. **Load Master Analysis Node**: Loads the candidate's centralized analysis details from `master_analysis.json`.
+3. **Retrieve Resume Context Node**: Queries the session's ChromaDB index using the target role and key job description snippets to fetch relevant resume passages.
+4. **Determine Focus Node**: Deterministically infers interview focus, difficulty (Junior/Intermediate/Senior), and coding topics from the inputs.
+5. **Generate Report Node**: Executes a single Groq reasoning call to create a highly personalized prep plan and set of technical, behavioral, and HR questions.
+6. **Validate Report Node**: Checks report conformance against the `InterviewCoachReport` Pydantic schema.
+7. **Persist Cache Node**: Caches the report under `storage/sessions/{session_id}/interview/{cache_key}.json`.
+
+### Smart Caching Strategy
+- Caches reports using a filesystem-safe hash key generated from the Target Role and Job Description SHA-256 hash (if present).
+- If an identical interview prep request is received, it returns the cached result, saving API latency and token usage.
