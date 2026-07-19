@@ -1,46 +1,118 @@
 # CareerPilot AI Backend
 
-This is the FastAPI backend application for CareerPilot AI.
+FastAPI backend foundation for CareerPilot AI. Responsible for file upload validation, PDF text extraction, text cleaning, and project architecture layout.
 
 ## Project Structure
 
-- `app/`: FastAPI application startup, configuration, and app initialization.
-- `api/`: API router definitions, endpoint controllers (v1, v2).
-- `agents/`: AI agents logic, prompt chains, LLM integrations.
-- `workflows/`: Multi-agent orchestrations, state machines, workflow sequences.
-- `rag/`: Retrieval-Augmented Generation retrieval pipelines, text chunking, formatting.
-- `vectorstore/`: Vector database integrations (Pinecone, Chroma, etc.).
-- `prompts/`: Prompt management, system messages, templates.
-- `services/`: Core business logic, helper services, client integrations.
-- `models/`: Pydantic input/output schemas and database models.
-- `utils/`: Common utilities, logging, decorators, date/string formatters.
-- `config/`: Application settings, environment configuration.
-- `tests/`: Pytest unit and integration tests.
+```text
+backend/
+├── app/
+│   ├── api/
+│   │   ├── routes/
+│   │   │   ├── health.py
+│   │   │   └── upload.py
+│   │   └── __init__.py
+│   ├── core/
+│   │   ├── config.py
+│   │   ├── logging.py
+│   │   └── __init__.py
+│   ├── schemas/
+│   │   ├── health.py
+│   │   ├── upload.py
+│   │   └── __init__.py
+│   ├── services/
+│   │   ├── parser/
+│   │   │   ├── pdf_parser.py
+│   │   │   └── text_cleaner.py
+│   │   └── __init__.py
+│   ├── utils/
+│   │   └── __init__.py
+│   ├── main.py
+│   └── __init__.py
+├── uploads/
+├── .env.example
+├── main.py (entrypoint proxy)
+├── requirements.txt
+└── README.md
+```
 
-## Running Locally
+## Getting Started
 
 ### 1. Prerequisites
-- Python 3.9+
-- pip
+- Python 3.11+
+- Virtual environment manager (`venv`)
 
-### 2. Setup
-
-Create a virtual environment:
+### 2. Setup Virtual Environment
+Navigate to the `backend/` directory:
 ```bash
+cd backend
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-Install dependencies:
+### 3. Install Dependencies
+Install only the specific packages required for this phase:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run Server
-
-Run the development server using uvicorn:
+### 4. Configure Environment
+Copy `.env.example` to a new `.env` file:
 ```bash
-uvicorn main:app --reload --port 8000
+cp .env.example .env
 ```
-The API will be available at `http://localhost:8000`.
-Interactive API documentation will be available at `http://localhost:8000/docs`.
+Adjust configurations as needed. By default, it sets up host `0.0.0.0`, port `8000`, size limits at `10MB`, and active folders.
+
+### 5. Run FastAPI Server
+Start the development server with hot-reload enabled:
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+*(Alternatively, you can run `uvicorn main:app --reload --port 8000` via the top-level proxy).*
+
+---
+
+## API Documentation
+
+Once the server is running, the interactive documentation is accessible at:
+- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+---
+
+## Endpoints Summary
+
+### 1. Health Status
+- **Method**: `GET`
+- **Path**: `/health`
+- **Response Schema**:
+  ```json
+  {
+    "status": "healthy",
+    "service": "CareerPilot Backend"
+  }
+  ```
+
+### 2. Resume PDF Upload
+- **Method**: `POST`
+- **Path**: `/upload`
+- **Content-Type**: `multipart/form-data`
+- **Body Parameter**: `resume` (must be a valid `.pdf` file up to 10MB)
+- **Response Schema**:
+  ```json
+  {
+    "success": true,
+    "filename": "original_filename.pdf",
+    "pages": 2,
+    "characters": 6128,
+    "text": "...cleaned extracted text..."
+  }
+  ```
+
+#### Example cURL Request:
+```bash
+curl -X POST "http://localhost:8000/upload" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "resume=@/path/to/your/resume.pdf"
+```
