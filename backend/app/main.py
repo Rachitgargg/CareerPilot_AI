@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import logger
-from app.api.routes import health, upload
+from app.api.routes import health, upload, analysis
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -53,3 +53,4 @@ app.add_middleware(
 # Register routes
 app.include_router(health.router)
 app.include_router(upload.router)
+app.include_router(analysis.router, prefix="/api/v1")

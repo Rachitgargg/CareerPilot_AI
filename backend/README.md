@@ -117,6 +117,30 @@ PDF Upload -> Text Extraction -> Text Cleaning
 
 ---
 
+## Architecture: Master Career Analysis Layer (Phase 3)
+
+Phase 3 builds the centralized reasoning engine of CareerPilot AI, producing a comprehensive career analysis in a single pass:
+
+```text
+START -> Load Profile Node -> Retrieve Context Node -> Master Analysis Node -> Validate Node -> Persist Node -> END
+```
+
+### LangGraph Workflow
+1. **Load Profile Node**: Reads `profile.json` from the session storage.
+2. **Retrieve Context Node**: Pulls top `k=4` chunks semantically related to career topics from the session's isolated ChromaDB database.
+3. **Master Analysis Node**: Invokes Groq (`llama-3.3-70b-versatile`) to generate a comprehensive analysis covering ATS score, strengths, weaknesses, missing skills, prioritized roadmap, and recommended projects in a single call.
+4. **Validate Node**: Validates schema compliance against the `MasterAnalysis` Pydantic model.
+5. **Persist Node**: Saves the analysis as `master_analysis.json` in the session's storage directory.
+
+### Smart Caching Strategy
+To minimize Groq API dependency and reduce Render Free Tier resource utilization:
+- The system checks if `master_analysis.json` already exists for the given `session_id`.
+- If found, it parses, validates, and returns it immediately (sub-millisecond cache hits).
+- If absent, it executes the LangGraph workflow.
+- Regeneration only occurs if the underlying resume file or profile is re-parsed.
+
+---
+
 ## API Documentation
 
 Once the server is running, the interactive documentation is accessible at:

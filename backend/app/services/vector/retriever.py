@@ -1,3 +1,4 @@
+import time
 from langchain_core.documents import Document
 from app.services.vector.chroma_client import get_vector_store
 from app.core.logging import logger
@@ -8,11 +9,13 @@ def retrieve_relevant_chunks(session_id: str, query: str, k: int = 4) -> list[Do
     No LLM calls are made here. Only retrieves documents.
     """
     logger.info(f"Retrieving top {k} relevant chunks for query in session {session_id}")
+    start_time = time.time()
     try:
         db = get_vector_store(session_id)
         # Similarity search returning Document objects
         results = db.similarity_search(query, k=k)
-        logger.info(f"Successfully retrieved {len(results)} chunks.")
+        duration = time.time() - start_time
+        logger.info(f"ChromaDB retrieval completed in {duration:.4f} seconds for session {session_id}. Retrieved {len(results)} chunks.")
         return results
     except Exception as e:
         logger.error(f"Failed to retrieve chunks from ChromaDB for session {session_id}: {str(e)}")
