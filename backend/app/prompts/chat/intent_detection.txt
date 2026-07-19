@@ -1,0 +1,21 @@
+You are an intent detection module for a career mentoring chat system.
+Analyze the user's message and the conversation history below, and classify the intent of the user's message into exactly one of the following categories:
+- career_advice (queries asking for general career path guidance, transition advice, industry insights, or professional growth)
+- resume_question (queries about specific bullet points, formatting, missing information, or modifications in their resume)
+- skills (queries about what skills to learn, technologies to prioritize, or skills gaps)
+- projects (queries asking for project recommendations, ideas, tech stacks, or project details)
+- roadmap (queries about learning timelines, 30-60-90 day plans, or learning progression)
+- ats (queries about ATS score, ATS optimization, resume parsing, or keyword matching)
+- interview (queries about interview focus areas, mock questions, or preparation tips)
+- general (casual conversation like greeting, thanking, or questions not covered by other categories)
+
+Output your classification strictly as a JSON object with a single key "intent", for example:
+{
+  "intent": "career_advice"
+}
+
+Conversation History:
+{history}
+
+User Message:
+{message}

@@ -9,6 +9,8 @@ backend/
 ├── app/
 │   ├── api/
 │   │   ├── routes/
+│   │   │   ├── analysis.py
+│   │   │   ├── chat.py
 │   │   │   ├── health.py
 │   │   │   └── upload.py
 │   │   └── __init__.py
@@ -17,13 +19,29 @@ backend/
 │   │   ├── logging.py
 │   │   └── __init__.py
 │   ├── prompts/
+│   │   ├── chat/
+│   │   │   ├── intent_detection.txt
+│   │   │   ├── response_generation.txt
+│   │   │   └── system.txt
+│   │   ├── master_analysis.txt
 │   │   └── resume_extraction.txt
 │   ├── schemas/
 │   │   ├── career_profile.py
+│   │   ├── chat.py
 │   │   ├── health.py
+│   │   ├── master_analysis.py
 │   │   ├── upload.py
 │   │   └── __init__.py
 │   ├── services/
+│   │   ├── chat/
+│   │   │   ├── chat_service.py
+│   │   │   └── __init__.py
+│   │   ├── graph/
+│   │   │   ├── career_graph.py
+│   │   │   ├── chat_graph.py
+│   │   │   ├── chat_nodes.py
+│   │   │   ├── chat_tools.py
+│   │   │   └── nodes.py
 │   │   ├── llm/
 │   │   │   ├── ai_service.py
 │   │   │   ├── embedding_client.py
@@ -184,3 +202,47 @@ curl -X POST "http://localhost:8000/upload" \
   -H "Content-Type: multipart/form-data" \
   -F "resume=@/path/to/your/resume.pdf"
 ```
+
+### 3. Master Career Analysis
+- **Method**: `POST`
+- **Path**: `/api/v1/analysis/{session_id}`
+- **Response Schema**: `MasterAnalysis` JSON (containing `career_summary`, `ats_analysis`, `skills_gap`, `project_recommendations`, etc.)
+
+### 4. AI Career Chat
+- **Method**: `POST`
+- **Path**: `/api/v1/chat/{session_id}`
+- **Request Body**:
+  ```json
+  {
+    "message": "What skills are missing in my profile?"
+  }
+  ```
+- **Response Schema**:
+  ```json
+  {
+    "response": "Based on your career profile...",
+    "sources": [
+      "career_profile",
+      "master_analysis",
+      "resume"
+    ]
+  }
+  ```
+
+---
+
+## Architecture: AI Career Chat Layer (Phase 4A)
+
+Phase 4A implements an intelligent conversational agent that behaves as a career mentor, using a sequential, lightweight LangGraph workflow:
+
+```text
+START -> Load Memory Node -> Intent Detection Node -> Context Builder Node -> Tool Router Node -> Response Generation Node -> Save Memory Node -> END
+```
+
+### Flow Components
+1. **Load Memory Node**: Loads previous conversation logs from `storage/sessions/{session_id}/chat_history.json`.
+2. **Intent Detection Node**: Determines user query intent (`career_advice`, `resume_question`, `skills`, `projects`, `roadmap`, `ats`, `interview`, or `general`).
+3. **Context Builder Node**: Maps detected intent to required backend tools.
+4. **Tool Router Node**: Runs chosen tools (`load_profile`, `load_analysis`, `retrieve_resume`) to collect target context.
+5. **Response Generation Node**: Invokes Groq with system persona instructions and slices the history to the last 20 messages for context window efficiency.
+6. **Save Memory Node**: Appends user message and generated response to history and writes to disk.
