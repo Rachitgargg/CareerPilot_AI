@@ -187,3 +187,64 @@ def generate_chat_response_with_groq(context: str, history: list, message: str) 
         raise RuntimeError(f"LLM chat response generation failed: {str(e)}")
 
 
+def generate_resume_tailoring(
+    profile: CareerProfile,
+    analysis: MasterAnalysis,
+    resume_context: str,
+    job_description: str
+):
+    """
+    Generate resume tailoring report comparing profile, analysis, and context against job description.
+    Uses Groq and returns a validated ResumeTailoringReport.
+    """
+    from app.schemas.tailoring import ResumeTailoringReport
+    logger.info("Generating resume tailoring report using Groq...")
+    
+    prompt_path = Path(__file__).resolve().parent.parent.parent / "prompts" / "resume_tailoring.txt"
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            template = f.read()
+    except Exception as e:
+        logger.error(f"Failed to load resume tailoring prompt template: {str(e)}")
+        raise RuntimeError(f"Prompt template missing: {str(e)}")
+        
+    user_prompt = template.format(
+        career_profile=profile.model_dump_json(indent=2),
+        master_analysis=analysis.model_dump_json(indent=2) if analysis else "No master analysis available.",
+        resume_context=resume_context or "No additional resume excerpts available.",
+        job_description=job_description
+    )
+    
+    messages = [
+        {"role": "user", "content": user_prompt}
+    ]
+    
+    import time
+    start_time = time.time()
+    try:
+        response_str = groq_client.get_completion(
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
+        duration = time.time() - start_time
+        logger.info(f"Groq API tailoring call completed in {duration:.4f} seconds.")
+    except Exception as e:
+        logger.error(f"Groq API call failed for resume tailoring: {str(e)}")
+        raise RuntimeError(f"LLM tailoring failed: {str(e)}")
+        
+    try:
+        parsed_json = json.loads(response_str)
+    except json.JSONDecodeError as e:
+        logger.error(f"Groq did not return valid JSON for tailoring: {str(e)}")
+        raise ValueError(f"Failed to parse LLM response as JSON: {str(e)}")
+        
+    try:
+        report = ResumeTailoringReport.model_validate(parsed_json)
+        return report
+    except Exception as e:
+        logger.error(f"Validation of tailoring report failed: {str(e)}")
+        raise ValueError(f"Generated tailoring report did not conform to schema: {str(e)}")
+
+
+

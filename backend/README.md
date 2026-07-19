@@ -12,6 +12,7 @@ backend/
 │   │   │   ├── analysis.py
 │   │   │   ├── chat.py
 │   │   │   ├── health.py
+│   │   │   ├── tailor.py
 │   │   │   └── upload.py
 │   │   └── __init__.py
 │   ├── core/
@@ -24,13 +25,15 @@ backend/
 │   │   │   ├── response_generation.txt
 │   │   │   └── system.txt
 │   │   ├── master_analysis.txt
-│   │   └── resume_extraction.txt
+│   │   ├── resume_extraction.txt
+│   │   └── resume_tailoring.txt
 │   ├── schemas/
 │   │   ├── career_profile.py
 │   │   ├── chat.py
 │   │   ├── health.py
 │   │   ├── master_analysis.py
 │   │   ├── upload.py
+│   │   ├── tailoring.py
 │   │   └── __init__.py
 │   ├── services/
 │   │   ├── chat/
@@ -41,7 +44,13 @@ backend/
 │   │   │   ├── chat_graph.py
 │   │   │   ├── chat_nodes.py
 │   │   │   ├── chat_tools.py
-│   │   │   └── nodes.py
+│   │   │   ├── nodes.py
+│   │   │   ├── tailoring_graph.py
+│   │   │   └── tailoring_nodes.py
+│   │   ├── tailoring/
+│   │   │   ├── job_parser.py
+│   │   │   ├── tailoring_service.py
+│   │   │   └── __init__.py
 │   │   ├── llm/
 │   │   │   ├── ai_service.py
 │   │   │   ├── embedding_client.py
@@ -229,6 +238,17 @@ curl -X POST "http://localhost:8000/upload" \
   }
   ```
 
+### 5. Resume Tailoring & Optimization
+- **Method**: `POST`
+- **Path**: `/api/v1/tailor/{session_id}`
+- **Request Body**:
+  ```json
+  {
+    "job_description": "We are looking for a Python engineer with FastAPI experience..."
+  }
+  ```
+- **Response Schema**: `ResumeTailoringReport` (containing `overall_match_score`, `breakdown`, `missing_keywords`, `bullet_point_improvements`, `final_recommendations`, etc.)
+
 ---
 
 ## Architecture: AI Career Chat Layer (Phase 4A)
@@ -246,3 +266,21 @@ START -> Load Memory Node -> Intent Detection Node -> Context Builder Node -> To
 4. **Tool Router Node**: Runs chosen tools (`load_profile`, `load_analysis`, `retrieve_resume`) to collect target context.
 5. **Response Generation Node**: Invokes Groq with system persona instructions and slices the history to the last 20 messages for context window efficiency.
 6. **Save Memory Node**: Appends user message and generated response to history and writes to disk.
+
+---
+
+## Architecture: Resume Tailoring & Optimization Engine (Phase 4B)
+
+Phase 4B builds a robust matching engine that compares candidate details against a job description using a linear LangGraph workflow:
+
+```text
+START -> Load Profile -> Load Master Analysis -> Retrieve Resume Context -> Tailoring Analysis -> Validate Output -> Persist Cache -> END
+```
+
+### Flow Components
+1. **Load Profile Node**: Loads raw JSON profile details from `profile.json`.
+2. **Load Master Analysis Node**: Loads the centralized analysis details from `master_analysis.json`.
+3. **Retrieve Resume Context Node**: Uses a Python parser to extract key requirements (title, skills) from the job description and performs similarity searches on the session's ChromaDB index.
+4. **Tailoring Analysis Node**: Makes a single Groq reasoning call (`llama-3.3-70b-versatile`) to generate a comprehensive matching breakdown, keyword gaps, and bullet point recommendations.
+5. **Validate Output Node**: Confirms schema alignment against the `ResumeTailoringReport` Pydantic model.
+6. **Persist Cache Node**: Caches the report under `storage/sessions/{session_id}/tailoring/{job_hash}.json` using a SHA-256 hash of the job description. Subsequent identical requests bypass Groq completely.
