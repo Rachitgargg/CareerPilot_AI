@@ -111,7 +111,7 @@ export function Profile() {
         
         {/* Header Block */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-surface-container-low p-6 rounded-card border border-surface-container-high">
-          <Avatar src={user.avatarUrl} alt={user.name} size="lg" />
+          <Avatar src={user.avatarUrl || undefined} alt={user.name} size="lg" fallback={user.name ? user.name[0].toUpperCase() : 'U'} />
           <div className="flex-1 text-center sm:text-left">
             {isEditing ? (
               <div className="flex flex-col gap-3 max-w-md">

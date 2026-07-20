@@ -1,7 +1,7 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { Bell, Search, Menu } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
-import { CURRENT_USER } from '@/services/mockData';
+import { profileService } from '@/services/profileService';
 
 export interface TopHeaderProps {
   title?: string;
@@ -24,6 +24,16 @@ export function TopHeader({
   actions,
   onMenuClick,
 }: TopHeaderProps) {
+  const [initial, setInitial] = useState('U');
+
+  useEffect(() => {
+    profileService.getProfile().then(u => {
+      if (u && u.name) {
+        setInitial(u.name[0].toUpperCase());
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <header className="bg-background flex justify-between items-center w-full h-20 px-4 md:px-container-padding sticky top-0 z-40">
       <div className="flex items-center gap-4">
@@ -55,7 +65,7 @@ export function TopHeader({
           <Bell size={22} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-background" />
         </button>
-        <Avatar src={CURRENT_USER.avatarUrl} alt={CURRENT_USER.name} fallback="A" />
+        <Avatar src={undefined} alt="User Profile" fallback={initial} />
       </div>
     </header>
   );
