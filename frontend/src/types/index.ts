@@ -87,6 +87,7 @@ export interface Job {
   postedAt: string;
   description: string;
   stage?: ApplicationStage;
+  url?: string;
 }
 
 export interface DreamCompany {

@@ -1,19 +1,73 @@
-import { withLatency } from './apiClient';
-import { CHAT_MESSAGES, CHAT_SUGGESTION_CHIPS } from './mockData';
+import { sendChatMessage } from './api/chat';
 import type { ChatMessage } from '@/types';
+import { CHAT_SUGGESTION_CHIPS } from './mockData';
+
+// Local session-level chat history
+let sessionMessages: ChatMessage[] = [
+  {
+    id: 'welcome',
+    role: 'assistant',
+    content: "Hi, I'm your CareerPilot AI mentor. Ask me anything about your career path, gaps in skills, or how to prepare for interviews!",
+    timestamp: 'Just now',
+  }
+];
 
 export const chatService = {
-  getMessages: () => withLatency(CHAT_MESSAGES),
-  getSuggestionChips: () => withLatency(CHAT_SUGGESTION_CHIPS),
-  sendMessage: (_content: string): Promise<ChatMessage> =>
-    withLatency(
-      {
-        id: `msg-${Date.now()}`,
+  getMessages: async (): Promise<ChatMessage[]> => {
+    return sessionMessages;
+  },
+  
+  getSuggestionChips: async () => {
+    return CHAT_SUGGESTION_CHIPS;
+  },
+  
+  sendMessage: async (content: string): Promise<ChatMessage> => {
+    // Add user message to local history
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}-user`,
+      role: 'user',
+      content,
+      timestamp: 'Just now',
+    };
+    sessionMessages.push(userMsg);
+    
+    try {
+      const result = await sendChatMessage(content);
+      
+      let finalContent = result.response;
+      if (result.sources && result.sources.length > 0) {
+        finalContent += `\n\n*(Sources: ${result.sources.join(', ')})*`;
+      }
+      
+      const assistantMsg: ChatMessage = {
+        id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
-        content:
-          "Thanks for sharing that. Based on what you've told me, let's break this down into a structured response using the STAR method.",
+        content: finalContent,
         timestamp: 'Just now',
-      },
-      700
-    ),
+      };
+      
+      sessionMessages.push(assistantMsg);
+      return assistantMsg;
+    } catch (e: any) {
+      const errorMsg: ChatMessage = {
+        id: `msg-${Date.now()}-err`,
+        role: 'assistant',
+        content: `Sorry, I encountered an error: ${e.message || 'Unable to connect to AI Coach backend.'}`,
+        timestamp: 'Just now',
+      };
+      sessionMessages.push(errorMsg);
+      return errorMsg;
+    }
+  },
+  
+  clearChat: () => {
+    sessionMessages = [
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Hi, I'm your CareerPilot AI mentor. Ask me anything about your career path, gaps in skills, or how to prepare for interviews!",
+        timestamp: 'Just now',
+      }
+    ];
+  }
 };

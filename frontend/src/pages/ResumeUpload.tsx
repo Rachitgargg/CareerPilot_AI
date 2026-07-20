@@ -17,12 +17,19 @@ export function ResumeUpload() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'done'>('idle');
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
     setFileName(file.name);
     setStatus('uploading');
-    await resumeService.uploadResume(file);
-    setStatus('done');
+    setError(null);
+    try {
+      await resumeService.uploadResume(file);
+      setStatus('done');
+    } catch (e: any) {
+      setStatus('idle');
+      setError(e.message || "Failed to upload resume. Please ensure it is a valid PDF and try again.");
+    }
   };
 
   return (
@@ -73,6 +80,7 @@ export function ResumeUpload() {
                   Drag and drop your resume here, or <span className="text-primary underline">browse</span>
                 </p>
                 <span className="font-metadata text-metadata text-on-surface-variant">PDF, DOC up to 10MB</span>
+                {error && <p className="text-error font-body-sm text-center mt-2 font-medium">{error}</p>}
               </>
             )}
             {status === 'uploading' && (

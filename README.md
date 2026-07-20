@@ -64,6 +64,54 @@ The API docs will be interactive and accessible at `http://localhost:8000/docs`.
 
 ---
 
+## Environment Variables
+
+### Backend Configuration (`backend/.env`)
+Create `backend/.env` with these configurations:
+```env
+HOST=0.0.0.0
+PORT=8000
+MAX_UPLOAD_SIZE_MB=10
+GROQ_API_KEY=your_groq_api_key
+GOOGLE_API_KEY=your_gemini_api_key
+GROQ_MODEL=llama-3.3-70b-versatile
+GOOGLE_EMBEDDING_MODEL=models/text-embedding-004
+STORAGE_FOLDER=storage
+```
+
+### Frontend Configuration (`frontend/.env`)
+Create `frontend/.env` with these configurations:
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+---
+
+## Running Locally & End-to-End Integration
+
+Follow these steps to run and test the complete integrated system:
+
+1. **Start the Backend**:
+   ```bash
+   cd backend
+   source venv/bin/activate
+   PYTHONPATH=. uvicorn app.main:app --port 8000 --reload
+   ```
+2. **Start the Frontend**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+3. **E2E Flow**:
+   * Navigate to `http://localhost:5173/resume-upload` and upload a resume (PDF).
+   * Wait for processing; upon success, navigate to Dashboard showing live profile metrics, suggestions, and recommended projects.
+   * Talk to the Career Mentor on `/chat` to test real LLM chat.
+   * Optimize bullet points in `/resume-tailoring` by pasting job descriptions.
+   * Generate interview prep sessions for your target role in `/interview-prep`.
+   * Search and match job listings tailored to your graduation status and skills on `/jobs`.
+
+---
+
 ## Documentation
 
 For further information on design guidelines, specs, and details, please reference the `docs/` folder:

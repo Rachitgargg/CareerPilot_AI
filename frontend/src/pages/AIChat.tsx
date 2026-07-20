@@ -26,7 +26,7 @@ export function AIChat() {
   const handleSend = async (content: string) => {
     if (!content.trim()) return;
     const userMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
+      id: `msg-${Date.now()}-temp`,
       role: 'user',
       content,
       timestamp: 'Just now',
@@ -34,9 +34,16 @@ export function AIChat() {
     setMessages((prev) => [...prev, userMessage]);
     setDraft('');
     setIsThinking(true);
-    const reply = await chatService.sendMessage(content);
-    setIsThinking(false);
-    setMessages((prev) => [...prev, reply]);
+    
+    try {
+      await chatService.sendMessage(content);
+      const allMsgs = await chatService.getMessages();
+      setMessages(allMsgs);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return (

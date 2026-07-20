@@ -4,17 +4,38 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { SectionHeading } from '@/components/common/SectionHeading';
 import { JobCard } from '@/components/jobs/JobCard';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { jobsService } from '@/services/jobsService';
+import { Loader2 } from 'lucide-react';
 
 const filters = ['All roles', 'Remote', 'Saved'] as const;
 
 export function JobDiscovery() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All roles');
+  const [preferredRole, setPreferredRole] = useState('');
+  const [location, setLocation] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Initial load
   useEffect(() => {
-    jobsService.getJobs().then(setJobs);
+    handleSearch();
   }, []);
+
+  const handleSearch = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await jobsService.getJobs(preferredRole || undefined, location || undefined);
+      setJobs(res);
+    } catch (e: any) {
+      setError(e.message || 'Failed to retrieve job recommendations.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredJobs = useMemo(() => {
     if (filter === 'Remote') return jobs.filter((j) => j.remote);
@@ -28,12 +49,52 @@ export function JobDiscovery() {
   };
 
   return (
-    <AppLayout header={{ showSearch: true, searchPlaceholder: 'Search job titles, companies...' }}>
+    <AppLayout header={{ showSearch: false }}>
       <div className="px-4 md:px-container-padding py-10 flex flex-col gap-8">
         <SectionHeading
           title="Job Discovery"
           description="Roles ranked by compatibility with your skills, goals, and resume."
         />
+
+        {/* Discovery Filter Controls */}
+        <div className="bg-surface-container-low rounded-card p-6 flex flex-col gap-4 border border-surface-container-high">
+          <h3 className="font-headline-md text-headline-md text-primary">Discover Tailored Opportunities</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="flex flex-col gap-2">
+              <label className="font-metadata text-metadata text-on-surface-variant">Preferred Role</label>
+              <Input
+                value={preferredRole}
+                onChange={(e) => setPreferredRole(e.target.value)}
+                placeholder="e.g. AI Engineer, React Developer"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="font-metadata text-metadata text-on-surface-variant">Location Constraint</label>
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Remote, San Francisco"
+                disabled={isLoading}
+              />
+            </div>
+            <Button onClick={handleSearch} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} /> Finding Jobs...
+                </>
+              ) : (
+                'Find Matches'
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-error/10 border border-error/20 text-error rounded-card p-4">
+            {error}
+          </div>
+        )}
 
         <Tabs value={filter} onValueChange={(v) => setFilter(v as (typeof filters)[number])}>
           <TabsList>
@@ -45,11 +106,18 @@ export function JobDiscovery() {
           </TabsList>
         </Tabs>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
-          {filteredJobs.map((job) => (
-            <JobCard key={job.id} job={job} onSave={handleSave} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="animate-spin text-primary" size={40} />
+            <p className="font-body-md text-body-md text-on-surface-variant">Matching your skills against target opportunities...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
+            {filteredJobs.map((job) => (
+              <JobCard key={job.id} job={job} onSave={handleSave} />
+            ))}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
