@@ -35,9 +35,7 @@ async def update_profile(session_id: str, updated_profile: CareerProfile):
     Overwrite/update the user CareerProfile (profile.json) for a given session.
     """
     session_dir = settings.STORAGE_DIR / "sessions" / session_id
-    if not session_dir.exists():
-        logger.error(f"Session directory not found for ID: {session_id}")
-        raise HTTPException(status_code=404, detail="Session not found. Please upload a resume first.")
+    session_dir.mkdir(parents=True, exist_ok=True)
         
     profile_path = session_dir / "profile.json"
     try:
