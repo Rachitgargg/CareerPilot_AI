@@ -13,6 +13,7 @@ backend/
 │   │   │   ├── chat.py
 │   │   │   ├── health.py
 │   │   │   ├── interview.py
+│   │   │   ├── jobs.py
 │   │   │   ├── tailor.py
 │   │   │   └── upload.py
 │   │   └── __init__.py
@@ -26,6 +27,7 @@ backend/
 │   │   │   ├── response_generation.txt
 │   │   │   └── system.txt
 │   │   ├── interview_coach.txt
+│   │   ├── job_discovery.txt
 │   │   ├── master_analysis.txt
 │   │   ├── resume_extraction.txt
 │   │   └── resume_tailoring.txt
@@ -34,6 +36,7 @@ backend/
 │   │   ├── chat.py
 │   │   ├── health.py
 │   │   ├── interview.py
+│   │   ├── jobs.py
 │   │   ├── master_analysis.py
 │   │   ├── upload.py
 │   │   ├── tailoring.py
@@ -49,12 +52,19 @@ backend/
 │   │   │   ├── chat_tools.py
 │   │   │   ├── interview_graph.py
 │   │   │   ├── interview_nodes.py
+│   │   │   ├── job_graph.py
+│   │   │   ├── job_nodes.py
 │   │   │   ├── nodes.py
 │   │   │   ├── tailoring_graph.py
 │   │   │   └── tailoring_nodes.py
 │   │   ├── interview/
 │   │   │   ├── interview_parser.py
 │   │   │   ├── interview_service.py
+│   │   │   └── __init__.py
+│   │   ├── jobs/
+│   │   │   ├── job_matcher.py
+│   │   │   ├── job_search.py
+│   │   │   ├── job_service.py
 │   │   │   └── __init__.py
 │   │   ├── tailoring/
 │   │   │   ├── job_parser.py
@@ -270,6 +280,18 @@ curl -X POST "http://localhost:8000/upload" \
   ```
 - **Response Schema**: `InterviewCoachReport` (containing `role`, `difficulty`, `readiness_score`, `strengths`, `weaknesses`, `focus_areas`, `technical_questions`, `behavioral_questions`, `hr_questions`, `coding_topics`, `preparation_plan`, `confidence_score`)
 
+### 7. AI Job Discovery & Matching Engine
+- **Method**: `POST`
+- **Path**: `/api/v1/jobs/{session_id}`
+- **Request Body**:
+  ```json
+  {
+    "preferred_role": "AI Engineer",
+    "location": "Remote"
+  }
+  ```
+- **Response Schema**: `JobDiscoveryResponse` (containing `recommended_jobs`, `career_summary`, `overall_recommendation`)
+
 ---
 
 ## Architecture: AI Career Chat Layer (Phase 4A)
@@ -328,3 +350,27 @@ START -> Load Profile -> Load Master Analysis -> Retrieve Resume Context -> Dete
 ### Smart Caching Strategy
 - Caches reports using a filesystem-safe hash key generated from the Target Role and Job Description SHA-256 hash (if present).
 - If an identical interview prep request is received, it returns the cached result, saving API latency and token usage.
+
+---
+
+## Architecture: AI Job Discovery & Matching Engine (Phase 4D)
+
+Phase 4D implements a smart, self-contained job discovery and match scoring engine that finds relevant jobs, ranks them deterministically, and provides personalized AI recommendations using a linear LangGraph workflow:
+
+```text
+START -> Load Profile -> Load Master Analysis -> Generate Search Query -> Search Jobs -> Normalize Jobs -> Python Match Scoring -> Generate AI Recommendation -> END
+```
+
+### Flow Components
+1. **Load Profile Node**: Loads the JSON career details from `profile.json`.
+2. **Load Master Analysis Node**: Loads the centralized analysis details from `master_analysis.json`.
+3. **Generate Search Query Node**: Resolves the preferred role query string, defaulting to profile interests or experience titles if omitted.
+4. **Search Jobs Node**: Searches the dynamic job service to retrieve a pool of 20–30 realistic, context-tailored job listings.
+5. **Normalize Jobs Node**: Standardizes job keys deterministically without using LLM calls.
+6. **Python Match Scoring Node**: Runs a weighted matching algorithm scoring listings from 0 to 100 based on skills overlap, experience matching, role keyword alignment, and location preferences, keeping the top 10.
+7. **Generate AI Recommendation Node**: Runs a single Groq reasoning call to enrich each of the top 10 jobs with custom fit reasoning, strengths, missing skills, and learning actions.
+
+### Smart Caching Strategy
+- Caches results under `storage/sessions/{session_id}/jobs/{cache_key}.json`.
+- The `cache_key` incorporates the query parameters and SHA-256 digests of `profile.json` and `master_analysis.json` to ensure updates to the resume invalidate the cache automatically.
+

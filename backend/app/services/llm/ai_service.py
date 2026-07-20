@@ -334,4 +334,93 @@ def generate_interview_coach(
         raise ValueError(f"Generated interview coach report did not conform to schema: {str(e)}")
 
 
+def generate_job_recommendations(
+    profile: CareerProfile,
+    analysis: MasterAnalysis,
+    jobs_list: list,
+    target_role: str
+):
+    """
+    Generate personalized AI explanations and priorities for the top 10 ranked jobs using Groq.
+    Returns a validated JobDiscoveryResponse.
+    """
+    from app.schemas.jobs import JobDiscoveryResponse
+    
+    logger.info("Generating job recommendations using Groq...")
+    
+    prompt_path = Path(__file__).resolve().parent.parent.parent / "prompts" / "job_discovery.txt"
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            template = f.read()
+    except Exception as e:
+        logger.error(f"Failed to load job discovery prompt template: {str(e)}")
+        raise RuntimeError(f"Prompt template missing: {str(e)}")
+        
+    # Context slicing to minimize prompt token count
+    sliced_profile = {
+        "summary": profile.summary or "",
+        "skills": profile.skills.model_dump() if profile.skills else {},
+        "education": [
+            {"degree": edu.degree, "field": edu.field} 
+            for edu in profile.education
+        ] if profile.education else []
+    }
+    
+    sliced_analysis = {
+        "career_summary": analysis.career_summary or "",
+        "skills_gap": analysis.skills_gap.model_dump() if analysis.skills_gap else {},
+        "strengths": analysis.ats_analysis.strengths if analysis.ats_analysis else []
+    }
+    
+    # Measure sizes
+    full_size = len(profile.model_dump_json()) + len(analysis.model_dump_json() if analysis else "")
+    sliced_size = len(json.dumps(sliced_profile)) + len(json.dumps(sliced_analysis))
+    reduction = ((full_size - sliced_size) / full_size * 100) if full_size > 0 else 0
+    
+    logger.info(
+        f"Context Slicing for Job Discovery | "
+        f"Original Size: {full_size} chars | "
+        f"Sliced Size: {sliced_size} chars | "
+        f"Reduction: {reduction:.2f}%"
+    )
+    
+    user_prompt = template.format(
+        career_profile=json.dumps(sliced_profile, indent=2),
+        master_analysis=json.dumps(sliced_analysis, indent=2),
+        ranked_jobs=json.dumps(jobs_list, indent=2),
+        target_role=target_role
+    )
+    
+    messages = [
+        {"role": "user", "content": user_prompt}
+    ]
+    
+    import time
+    start_time = time.time()
+    try:
+        response_str = groq_client.get_completion(
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
+        duration = time.time() - start_time
+        logger.info(f"Groq API job recommendations completed in {duration:.4f} seconds.")
+    except Exception as e:
+        logger.error(f"Groq API call failed for job recommendations: {str(e)}")
+        raise RuntimeError(f"LLM job recommendations failed: {str(e)}")
+        
+    try:
+        parsed_json = json.loads(response_str)
+    except json.JSONDecodeError as e:
+        logger.error(f"Groq did not return valid JSON for job recommendations: {str(e)}")
+        raise ValueError(f"Failed to parse LLM response as JSON: {str(e)}")
+        
+    try:
+        report = JobDiscoveryResponse.model_validate(parsed_json)
+        return report
+    except Exception as e:
+        logger.error(f"Validation of job recommendations failed: {str(e)}")
+        raise ValueError(f"Generated job recommendations did not conform to schema: {str(e)}")
+
+
 
