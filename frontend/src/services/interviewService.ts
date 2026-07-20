@@ -19,7 +19,7 @@ export const interviewService = {
           id: `tech-${idx}`,
           category: 'Technical',
           question: q.question,
-          tip: `Rationale: ${q.rationale}\n\nSuggested STAR Answer:\n${q.suggested_answer}`
+          tip: `Why it matters: ${(q as any).why_it_matters}\n\nWhat to cover:\n${(q as any).what_to_cover}`
         });
       });
       
@@ -28,7 +28,7 @@ export const interviewService = {
           id: `beh-${idx}`,
           category: 'Behavioral',
           question: q.question,
-          tip: `Rationale: ${q.rationale}\n\nSuggested STAR Answer:\n${q.suggested_answer}`
+          tip: `What the interviewer is looking for:\n${(q as any).what_interviewer_is_looking_for}`
         });
       });
       
@@ -37,7 +37,7 @@ export const interviewService = {
           id: `hr-${idx}`,
           category: 'Culture Fit',
           question: q.question,
-          tip: `Rationale: ${q.rationale}\n\nSuggested STAR Answer:\n${q.suggested_answer}`
+          tip: `Strategic guidance:\n${(q as any).suggested_answer_direction}`
         });
       });
       

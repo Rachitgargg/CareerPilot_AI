@@ -10,9 +10,9 @@ Analyze the user's message and the conversation history below, and classify the 
 - general (casual conversation like greeting, thanking, or questions not covered by other categories)
 
 Output your classification strictly as a JSON object with a single key "intent", for example:
-{
+{{
   "intent": "career_advice"
-}
+}}
 
 Conversation History:
 {history}
