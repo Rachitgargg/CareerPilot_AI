@@ -7,7 +7,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { jobsService } from '@/services/jobsService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X, Globe, Sparkles } from 'lucide-react';
+import { MatchScoreBadge } from '@/components/common/MatchScoreBadge';
 
 const filters = ['All roles', 'Remote', 'Saved'] as const;
 
@@ -18,6 +19,7 @@ export function JobDiscovery() {
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   // Initial load
   useEffect(() => {
@@ -114,11 +116,74 @@ export function JobDiscovery() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-card-gap">
             {filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} onSave={handleSave} />
+              <JobCard
+                key={job.id}
+                job={job}
+                onSave={handleSave}
+                onViewDetails={(j) => setSelectedJob(j)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Details Modal */}
+      {selectedJob && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-low rounded-card border border-surface-container-high w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-xl">
+            <div className="p-6 border-b border-surface-container-high flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center font-headline-md text-headline-md text-on-surface-variant shrink-0">
+                  {selectedJob.companyInitial}
+                </div>
+                <div>
+                  <h3 className="font-headline-md text-headline-md text-primary leading-tight">{selectedJob.title}</h3>
+                  <p className="font-body-md text-body-md text-on-surface-variant">{selectedJob.company}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedJob(null)}
+                className="text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-surface-container-high transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex flex-col gap-6">
+              <div className="flex items-center gap-3 flex-wrap">
+                <MatchScoreBadge score={selectedJob.matchScore} />
+                <span className="font-metadata text-metadata text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full">
+                  {selectedJob.location}
+                </span>
+                <span className="font-metadata text-metadata text-primary bg-primary/10 px-3 py-1 rounded-full">
+                  {selectedJob.salaryRange}
+                </span>
+              </div>
+
+              <div className="bg-surface-container-lowest border border-surface-container-high rounded-card p-4 flex flex-col gap-3">
+                <h4 className="font-headline-sm text-headline-sm text-primary flex items-center gap-1.5">
+                  <Sparkles size={16} /> AI Match Assessment
+                </h4>
+                {/* Parse the description details back out into sections if possible, else show raw text */}
+                <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
+                  {selectedJob.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-surface-container-high flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setSelectedJob(null)}>
+                Close
+              </Button>
+              {selectedJob.url && (
+                <Button onClick={() => window.open(selectedJob.url, '_blank')}>
+                  <Globe size={16} className="mr-1.5" /> Apply Direct
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

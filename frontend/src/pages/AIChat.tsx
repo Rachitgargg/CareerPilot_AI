@@ -47,7 +47,7 @@ export function AIChat() {
   };
 
   return (
-    <AppLayout header={{ title: 'AI Career Coach' }} fullBleed hideChatButton>
+    <AppLayout header={{ title: 'AI Career Coach' }} fullBleed hideChatButton contentClassName="min-h-0 overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto px-4 md:px-container-padding py-8">
           <div className="max-w-3xl mx-auto flex flex-col gap-6">

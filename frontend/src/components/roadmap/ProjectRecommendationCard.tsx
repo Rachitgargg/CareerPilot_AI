@@ -1,4 +1,5 @@
-import { Clock, Code2 } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Code2, CheckCircle2 } from 'lucide-react';
 import type { ProjectRecommendation } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,16 @@ const difficultyVariant: Record<ProjectRecommendation['difficulty'], 'sage' | 'b
 };
 
 export function ProjectRecommendationCard({ project }: { project: ProjectRecommendation }) {
+  const [status, setStatus] = useState<'idle' | 'in_progress' | 'completed'>('idle');
+
+  const handleAction = () => {
+    if (status === 'idle') {
+      setStatus('in_progress');
+    } else if (status === 'in_progress') {
+      setStatus('completed');
+    }
+  };
+
   return (
     <div className="bg-surface-container-lowest rounded-card border border-surface-container-high overflow-hidden flex flex-col">
       {project.imageUrl ? (
@@ -35,8 +46,20 @@ export function ProjectRecommendationCard({ project }: { project: ProjectRecomme
             </Badge>
           ))}
         </div>
-        <Button size="sm" variant="soft" className="self-start mt-2">
-          Start project
+        <Button
+          size="sm"
+          variant={status === 'in_progress' ? 'primary' : status === 'completed' ? 'soft' : 'soft'}
+          onClick={handleAction}
+          className="self-start mt-2"
+          disabled={status === 'completed'}
+        >
+          {status === 'idle' && 'Start project'}
+          {status === 'in_progress' && 'Mark as Complete'}
+          {status === 'completed' && (
+            <span className="flex items-center gap-1">
+              <CheckCircle2 size={14} className="text-sage" /> Completed
+            </span>
+          )}
         </Button>
       </div>
     </div>
