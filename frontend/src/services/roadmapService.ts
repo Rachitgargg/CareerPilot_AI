@@ -174,7 +174,11 @@ export const roadmapService = {
       const updatedMilestones = p.milestones.map(m => {
         const updatedCheckpoints = m.checkpoints.map(cp => {
           if (cp.id === checkpointId) {
-            return { ...cp, completed };
+            return { 
+              ...cp, 
+              completed, 
+              completedAt: completed ? new Date().toISOString() : undefined 
+            };
           }
           return cp;
         });

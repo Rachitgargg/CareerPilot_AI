@@ -88,6 +88,7 @@ export interface Job {
   description: string;
   stage?: ApplicationStage;
   url?: string;
+  trackedAt?: string;
 }
 
 export interface DreamCompany {
@@ -153,6 +154,7 @@ export interface ProjectCheckpoint {
   id: string;
   label: string;
   completed: boolean;
+  completedAt?: string;
 }
 
 export interface ProjectMilestone {

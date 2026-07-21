@@ -35,8 +35,8 @@ Output strictly a JSON object conforming to the following structure:
   "matched_keywords": [<list of strings, keywords successfully matched between resume and job description>],
   "missing_skills": [<list of strings, required skills from job description that candidate does not show evidence of>],
   "recommended_skill_additions": [<list of strings, skills present in job description that candidate has some indirect evidence of or should immediately learn/highlight>],
-  "projects_to_highlight": [<list of strings, candidate's existing projects to emphasize for this job, with rationale>],
-  "projects_to_deemphasize": [<list of strings, candidate's existing projects that are less relevant and can be shortened, with rationale>],
+  "projects_to_highlight": [<list of plain strings, where each string contains the project name and a brief rationale, e.g. "Project X: High relevance due to React stack">],
+  "projects_to_deemphasize": [<list of plain strings, where each string contains the project name and a brief rationale, e.g. "Project Y: Less relevant to this AI role">],
   "bullet_point_improvements": [
     {{
       "original": "<original bullet point from candidate experience/profile>",

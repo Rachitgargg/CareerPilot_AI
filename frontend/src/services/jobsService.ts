@@ -46,6 +46,7 @@ export const jobsService = {
         description: `${job.why_this_matches}\n\nMatching Strengths: ${job.matching_strengths.join(', ')}\n\nMissing Skills: ${job.missing_skills.join(', ')}\n\nLearning Recommendations: ${job.learning_recommendations.join(', ')}`,
         stage: 'saved' as const,
         url: job.url,
+        trackedAt: new Date().toISOString(),
       }));
       cachedJobs = list;
       localStorage.setItem('careerpilot_tracked_jobs', JSON.stringify(cachedJobs));
@@ -72,7 +73,8 @@ export const jobsService = {
   },
 
   addJob: (job: Job): Job[] => {
-    cachedJobs = [job, ...cachedJobs];
+    const jobWithTime = { ...job, trackedAt: job.trackedAt || new Date().toISOString() };
+    cachedJobs = [jobWithTime, ...cachedJobs];
     localStorage.setItem('careerpilot_tracked_jobs', JSON.stringify(cachedJobs));
     return cachedJobs;
   },

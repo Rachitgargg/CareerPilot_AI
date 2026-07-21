@@ -190,16 +190,42 @@ export function ApplicationTracker() {
                 <Trash2 size={16} /> Remove
               </Button>
               <div className="flex gap-2">
-                {selectedJob.url && (
-                  <a
-                    href={selectedJob.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-[#2b2b2b] hover:bg-[#404040] text-white px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
-                  >
-                    Apply Now <ExternalLink size={14} className="ml-1" />
-                  </a>
-                )}
+                {(() => {
+                  const url = selectedJob.url;
+                  let isValid = false;
+                  if (url) {
+                    try {
+                      const parsed = new URL(url);
+                      isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                    } catch {
+                      isValid = false;
+                    }
+                  }
+                  
+                  if (isValid && url) {
+                    return (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-lg bg-[#2b2b2b] hover:bg-[#404040] text-white px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
+                      >
+                        Apply Now <ExternalLink size={14} className="ml-1" />
+                      </a>
+                    );
+                  } else {
+                    return (
+                      <div className="flex flex-col items-end gap-1">
+                        <Button disabled variant="outline">
+                          Link Unavailable
+                        </Button>
+                        <span className="text-[10px] text-error font-metadata">
+                          No valid application URL found.
+                        </span>
+                      </div>
+                    );
+                  }
+                })()}
                 <Button onClick={() => setSelectedJob(null)}>
                   Close
                 </Button>

@@ -35,3 +35,11 @@ class ResumeTailoringReport(BaseModel):
 
 class TailoringRequest(BaseModel):
     job_description: str
+
+class ResumeTailoringApiResponse(BaseModel):
+    overall_match_score: int
+    breakdown: str
+    matching_strengths: List[str]
+    missing_keywords: List[str]
+    bullet_point_improvements: List[BulletPointImprovement]
+    final_recommendations: str

@@ -116,10 +116,9 @@ def test_tailor_success(mock_generate, dummy_session_and_profile_and_analysis, m
     assert response.status_code == 200
     data = response.json()
     assert data["overall_match_score"] == 85
-    assert data["breakdown"]["skills_match"] == 90
+    assert "Skills Match: 90%" in data["breakdown"]
     assert "kubernetes" in data["missing_keywords"]
-    assert "python" in data["matched_keywords"]
-    assert data["confidence_score"] == 0.95
+    assert "python" in data["matching_strengths"]
     
     # Verify cached file is saved as job hash JSON
     job_hash = hashlib.sha256(job_description.strip().encode("utf-8")).hexdigest()

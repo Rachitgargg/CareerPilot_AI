@@ -1,10 +1,11 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class ProjectCheckpoint(BaseModel):
     id: str = Field(description="Unique identifier for the checkpoint")
     label: str = Field(description="Text description of the checkpoint task")
     completed: bool = Field(default=False, description="Completion status of the checkpoint")
+    completed_at: Optional[str] = Field(default=None, description="ISO timestamp of completion")
 
 class ProjectMilestone(BaseModel):
     id: str = Field(description="Unique identifier for the milestone")

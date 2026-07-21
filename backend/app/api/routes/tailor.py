@@ -2,12 +2,12 @@ from fastapi import APIRouter, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from app.core.config import settings
 from app.core.logging import logger
-from app.schemas.tailoring import TailoringRequest, ResumeTailoringReport
+from app.schemas.tailoring import TailoringRequest, ResumeTailoringReport, ResumeTailoringApiResponse
 from app.services.tailoring.tailoring_service import get_resume_tailoring
 
 router = APIRouter()
 
-@router.post("/tailor/{session_id}", response_model=ResumeTailoringReport)
+@router.post("/tailor/{session_id}", response_model=ResumeTailoringApiResponse)
 async def tailor_resume(session_id: str, request: TailoringRequest):
     """
     Endpoint to analyze and tailor a candidate's resume for a specific job description.
@@ -45,7 +45,27 @@ async def tailor_resume(session_id: str, request: TailoringRequest):
     try:
         # Run tailoring service inside a threadpool to prevent blocking the event loop
         report = await run_in_threadpool(get_resume_tailoring, session_id, request.job_description)
-        return report
+        
+        # Format breakdown object to simple string list matching frontend interface
+        breakdown_str = (
+            f"Skills Match: {report.breakdown.skills_match}%\n"
+            f"Projects Match: {report.breakdown.projects_match}%\n"
+            f"Experience Match: {report.breakdown.experience_match}%\n"
+            f"Education Match: {report.breakdown.education_match}%\n"
+            f"Keywords Match: {report.breakdown.keywords_match}%"
+        )
+        
+        # Format recommendations list to simple paragraph string
+        final_recs_str = "\n".join(report.final_recommendations) if report.final_recommendations else ""
+        
+        return ResumeTailoringApiResponse(
+            overall_match_score=report.overall_match_score,
+            breakdown=breakdown_str,
+            matching_strengths=report.matched_keywords,
+            missing_keywords=report.missing_keywords,
+            bullet_point_improvements=report.bullet_point_improvements,
+            final_recommendations=final_recs_str
+        )
     except Exception as e:
         logger.exception(f"Unexpected error during resume tailoring: {str(e)}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred while generating the tailoring report.")
