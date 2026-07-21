@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import logger
-from app.api.routes import health, upload, analysis, chat, tailor, interview, jobs, profile
+from app.api.routes import health, upload, analysis, chat, tailor, interview, jobs, profile, projects
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -59,3 +59,4 @@ app.include_router(tailor.router, prefix="/api/v1")
 app.include_router(interview.router, prefix="/api/v1")
 app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(profile.router, prefix="/api/v1")
+app.include_router(projects.router, prefix="/api/v1")

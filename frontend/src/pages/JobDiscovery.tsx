@@ -171,15 +171,41 @@ export function JobDiscovery() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-surface-container-high flex justify-end gap-3">
+            <div className="p-6 border-t border-surface-container-high flex justify-end items-center gap-3">
               <Button variant="outline" onClick={() => setSelectedJob(null)}>
                 Close
               </Button>
-              {selectedJob.url && (
-                <Button onClick={() => window.open(selectedJob.url, '_blank')}>
-                  <Globe size={16} className="mr-1.5" /> Apply Direct
-                </Button>
-              )}
+              {(() => {
+                const url = selectedJob.url;
+                let isValid = false;
+                if (url) {
+                  try {
+                    const parsed = new URL(url);
+                    isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                  } catch {
+                    isValid = false;
+                  }
+                }
+                
+                if (isValid && url) {
+                  return (
+                    <Button onClick={() => window.open(url, '_blank')}>
+                      <Globe size={16} className="mr-1.5" /> Apply Direct
+                    </Button>
+                  );
+                } else {
+                  return (
+                    <div className="flex flex-col items-end gap-1">
+                      <Button disabled variant="outline">
+                        <Globe size={16} className="mr-1.5" /> Link Unavailable
+                      </Button>
+                      <span className="text-[10px] text-error font-metadata">
+                        No valid application URL found.
+                      </span>
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         </div>

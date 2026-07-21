@@ -149,6 +149,28 @@ export interface ProjectRecommendation {
   estimatedHours: number;
 }
 
+export interface ProjectCheckpoint {
+  id: string;
+  label: string;
+  completed: boolean;
+}
+
+export interface ProjectMilestone {
+  id: string;
+  title: string;
+  checkpoints: ProjectCheckpoint[];
+}
+
+export interface ActiveProject {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  technologies: string[];
+  status: 'idle' | 'in_progress' | 'completed';
+  milestones: ProjectMilestone[];
+}
+
 // ---------------------------------------------------------------------------
 // Interview preparation
 // ---------------------------------------------------------------------------

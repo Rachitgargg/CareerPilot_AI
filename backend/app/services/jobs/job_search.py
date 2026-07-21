@@ -84,10 +84,28 @@ def search_jobs(
             
         job_skills_list = list(job_skills)
         
-        # Application URL generator
-        clean_company = company.lower().replace(" ", "")
-        clean_role = role.lower().replace(" ", "-")
-        url = f"https://careers.{clean_company}.com/jobs/{clean_role}-{i}"
+        # Application URL generator using official company careers page
+        COMPANY_CAREERS_MAP = {
+            "Google": "https://careers.google.com",
+            "Meta": "https://www.metacareers.com",
+            "Stripe": "https://stripe.com/jobs",
+            "OpenAI": "https://openai.com/careers",
+            "Anthropic": "https://www.anthropic.com/careers",
+            "Databricks": "https://www.databricks.com/company/careers",
+            "Vercel": "https://vercel.com/careers",
+            "Retool": "https://retool.com/careers",
+            "Linear": "https://linear.app/careers",
+            "Supabase": "https://supabase.com/careers",
+            "Microsoft": "https://careers.microsoft.com",
+            "Amazon": "https://www.amazon.jobs",
+            "Netflix": "https://jobs.netflix.com",
+            "Airbnb": "https://careers.airbnb.com",
+            "Snowflake": "https://www.snowflake.com/trending/careers",
+            "Clerk": "https://clerk.com/careers",
+            "Resend": "https://resend.com/careers",
+            "Pinecone": "https://www.pinecone.io/careers"
+        }
+        url = COMPANY_CAREERS_MAP.get(company, "https://careers.google.com")
         
         jobs.append({
             "title": title,

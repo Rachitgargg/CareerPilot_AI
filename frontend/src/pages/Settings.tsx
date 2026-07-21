@@ -19,6 +19,9 @@ const sections = [
 export function Settings() {
   const [activeSection, setActiveSection] = useState('privacy');
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     settingsService.getPrivacyPreferences().then(setPreferences);
@@ -28,6 +31,38 @@ export function Settings() {
     setPreferences((prev) => prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)));
     const target = preferences.find((p) => p.id === id);
     if (target) settingsService.updatePreference(id, !target.enabled);
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    setFeedback(null);
+    try {
+      await settingsService.exportData();
+      setFeedback('Data exported successfully! Check your downloads folder.');
+    } catch {
+      alert('Failed to export account data.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const doubleCheck = confirm('Are you sure you want to permanently delete your account? This action is irreversible.');
+    if (!doubleCheck) return;
+
+    setIsDeleting(true);
+    setFeedback(null);
+    try {
+      await settingsService.deleteAccount();
+      setFeedback('Account deleted successfully. Redirecting...');
+      setTimeout(() => {
+        localStorage.removeItem('careerpilot_session_id');
+        window.location.href = '/';
+      }, 2000);
+    } catch {
+      alert('Failed to delete account.');
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -61,6 +96,12 @@ export function Settings() {
                 </p>
               </div>
 
+              {feedback && (
+                <div className="bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-panel p-4 text-xs font-metadata">
+                  {feedback}
+                </div>
+              )}
+
               <div className="flex flex-col gap-4">
                 {preferences.map((pref) => (
                   <div
@@ -85,8 +126,12 @@ export function Settings() {
                     Download a copy of all your CareerPilot AI data.
                   </p>
                 </div>
-                <Button variant="outline" onClick={() => settingsService.exportData()}>
-                  <Download size={16} /> Export
+                <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+                  {isExporting ? 'Exporting...' : (
+                    <>
+                      <Download size={16} className="mr-1" /> Export
+                    </>
+                  )}
                 </Button>
               </div>
 
@@ -99,8 +144,12 @@ export function Settings() {
                     Permanently remove your account and all associated data.
                   </p>
                 </div>
-                <Button variant="destructive" onClick={() => settingsService.deleteAccount()}>
-                  <Trash2 size={16} /> Delete
+                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Deleting...' : (
+                    <>
+                      <Trash2 size={16} className="mr-1" /> Delete
+                    </>
+                  )}
                 </Button>
               </div>
             </>

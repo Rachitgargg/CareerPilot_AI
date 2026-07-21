@@ -78,6 +78,16 @@ export const jobsService = {
   },
   
   getDreamCompanies: async (): Promise<DreamCompany[]> => {
+    try {
+      const saved = localStorage.getItem('careerpilot_dream_companies');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // Fallback to mock data if empty
+    localStorage.setItem('careerpilot_dream_companies', JSON.stringify(DREAM_COMPANIES));
     return DREAM_COMPANIES;
   },
   
@@ -86,12 +96,34 @@ export const jobsService = {
     return { success: true };
   },
   
-  followCompany: async (_company: DreamCompany) => {
+  followCompany: async (company: DreamCompany) => {
+    try {
+      const saved = localStorage.getItem('careerpilot_dream_companies');
+      const list: DreamCompany[] = saved ? JSON.parse(saved) : DREAM_COMPANIES;
+      const updated = list.map(c => c.id === company.id ? { ...c, isFollowing: !c.isFollowing } : c);
+      localStorage.setItem('careerpilot_dream_companies', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
     return { success: true };
+  },
+
+  addDreamCompany: (company: DreamCompany): DreamCompany[] => {
+    try {
+      const saved = localStorage.getItem('careerpilot_dream_companies');
+      const list: DreamCompany[] = saved ? JSON.parse(saved) : DREAM_COMPANIES;
+      const updated = [company, ...list];
+      localStorage.setItem('careerpilot_dream_companies', JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error(e);
+      return [company];
+    }
   },
 
   clearCache: () => {
     cachedJobs = [];
     localStorage.removeItem('careerpilot_tracked_jobs');
+    localStorage.removeItem('careerpilot_dream_companies');
   }
 };
