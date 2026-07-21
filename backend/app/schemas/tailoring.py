@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional
 
 class MatchBreakdown(BaseModel):
@@ -32,6 +32,24 @@ class ResumeTailoringReport(BaseModel):
     ats_recommendations: List[str]
     final_recommendations: List[str]
     confidence_score: float
+
+    @classmethod
+    @field_validator("projects_to_highlight", "projects_to_deemphasize", mode="before")
+    def clean_projects_list(cls, v):
+        if not isinstance(v, list):
+            return v
+        cleaned = []
+        for item in v:
+            if isinstance(item, dict):
+                name = item.get("project") or item.get("name") or item.get("title") or "Project"
+                rationale = item.get("rationale") or item.get("reason") or item.get("description") or ""
+                if rationale:
+                    cleaned.append(f"{name}: {rationale}")
+                else:
+                    cleaned.append(str(name))
+            else:
+                cleaned.append(str(item))
+        return cleaned
 
 class TailoringRequest(BaseModel):
     job_description: str
