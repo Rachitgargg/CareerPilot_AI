@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Video, Clock, Loader2 } from 'lucide-react';
 import type { InterviewQuestion } from '@/types';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -15,6 +15,15 @@ export function InterviewPreparation() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [readyScore, setReadyScore] = useState<number | null>(null);
+
+  useEffect(() => {
+    interviewService.getCachedQuestions().then(qs => {
+      if (qs && qs.length > 0) {
+        setQuestions(qs);
+        setReadyScore(87);
+      }
+    });
+  }, []);
 
   const handleGenerate = async () => {
     if (!targetRole.trim()) {

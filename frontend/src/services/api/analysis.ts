@@ -17,21 +17,14 @@ export interface ProjectRecommendation {
   title: string;
   description: string;
   difficulty: string; // "Beginner" | "Intermediate" | "Advanced"
-  skills: string[];
-  estimated_hours: number;
-}
-
-export interface RoadmapMilestone {
-  title: string;
-  description: string;
-  duration: string;
-  skills: string[];
+  technologies: string[];
+  reason: string;
 }
 
 export interface LearningRoadmap {
-  next_30_days: RoadmapMilestone[];
-  next_90_days: RoadmapMilestone[];
-  long_term: RoadmapMilestone[];
+  next_30_days: string[];
+  next_90_days: string[];
+  long_term: string[];
 }
 
 export interface MasterAnalysisResponse {

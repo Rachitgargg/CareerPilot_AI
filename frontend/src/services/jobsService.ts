@@ -1,17 +1,39 @@
 import { fetchRecommendedJobs } from './api/jobs';
 import { getSessionId } from './api/api';
 import { JOBS, DREAM_COMPANIES } from './mockData';
-import type { Job, DreamCompany } from '@/types';
+import type { Job, DreamCompany, ApplicationStage } from '@/types';
+
+let cachedJobs: Job[] = [];
+
+// Load initial cache from localStorage if available
+try {
+  const saved = localStorage.getItem('careerpilot_tracked_jobs');
+  if (saved) {
+    cachedJobs = JSON.parse(saved);
+  }
+} catch (e) {
+  console.error('Failed to parse saved jobs:', e);
+}
 
 export const jobsService = {
   getJobs: async (preferredRole?: string, location?: string): Promise<Job[]> => {
+    // Return local/cached jobs if we have them to avoid resetting state and to enable full tracking persistence
+    if (cachedJobs.length > 0 && !preferredRole && !location) {
+      return cachedJobs;
+    }
+    
     const sessionId = getSessionId();
-    if (!sessionId) return JOBS;
+    if (!sessionId) {
+      if (cachedJobs.length === 0) {
+        cachedJobs = JOBS.map(j => ({ ...j, stage: j.stage as ApplicationStage || 'saved' }));
+      }
+      return cachedJobs;
+    }
     
     try {
       const response = await fetchRecommendedJobs(preferredRole, location);
-      return response.recommended_jobs.map((job, idx) => ({
-        id: `job-${idx}`,
+      const list = response.recommended_jobs.map((job, idx) => ({
+        id: `job-${idx}-${Date.now()}`,
         title: job.title,
         company: job.company,
         companyInitial: job.company ? job.company[0].toUpperCase() : 'J',
@@ -25,21 +47,51 @@ export const jobsService = {
         stage: 'saved' as const,
         url: job.url,
       }));
+      cachedJobs = list;
+      localStorage.setItem('careerpilot_tracked_jobs', JSON.stringify(cachedJobs));
+      return list;
     } catch (e) {
       console.error("Job recommendations API failed, using fallback:", e);
-      return JOBS;
+      if (cachedJobs.length === 0) {
+        cachedJobs = JOBS.map(j => ({ ...j, stage: j.stage as ApplicationStage || 'saved' }));
+      }
+      return cachedJobs;
     }
+  },
+
+  updateJobStage: (jobId: string, stage: ApplicationStage): Job[] => {
+    cachedJobs = cachedJobs.map(j => j.id === jobId ? { ...j, stage } : j);
+    localStorage.setItem('careerpilot_tracked_jobs', JSON.stringify(cachedJobs));
+    return cachedJobs;
+  },
+
+  deleteJob: (jobId: string): Job[] => {
+    cachedJobs = cachedJobs.filter(j => j.id !== jobId);
+    localStorage.setItem('careerpilot_tracked_jobs', JSON.stringify(cachedJobs));
+    return cachedJobs;
+  },
+
+  addJob: (job: Job): Job[] => {
+    cachedJobs = [job, ...cachedJobs];
+    localStorage.setItem('careerpilot_tracked_jobs', JSON.stringify(cachedJobs));
+    return cachedJobs;
   },
   
   getDreamCompanies: async (): Promise<DreamCompany[]> => {
     return DREAM_COMPANIES;
   },
   
-  saveJob: async (_job: Job) => {
+  saveJob: async (job: Job) => {
+    jobsService.addJob(job);
     return { success: true };
   },
   
   followCompany: async (_company: DreamCompany) => {
     return { success: true };
+  },
+
+  clearCache: () => {
+    cachedJobs = [];
+    localStorage.removeItem('careerpilot_tracked_jobs');
   }
 };

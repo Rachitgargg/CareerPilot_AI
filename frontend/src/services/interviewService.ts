@@ -3,7 +3,13 @@ import type { InterviewQuestion } from '@/types';
 import { INTERVIEW_QUESTIONS } from './mockData';
 import { getSessionId } from './api/api';
 
+let cachedQuestions: InterviewQuestion[] = [];
+
 export const interviewService = {
+  getCachedQuestions: async (): Promise<InterviewQuestion[]> => {
+    return cachedQuestions;
+  },
+
   getQuestions: async (targetRole?: string, jobDescription?: string): Promise<InterviewQuestion[]> => {
     const sessionId = getSessionId();
     if (!sessionId) return INTERVIEW_QUESTIONS;
@@ -41,6 +47,7 @@ export const interviewService = {
         });
       });
       
+      cachedQuestions = list;
       return list;
     } catch (e) {
       console.error("Interview API prep call failed:", e);
@@ -50,5 +57,9 @@ export const interviewService = {
   
   startMockSession: async (_role: string) => {
     return { sessionId: `session-${Date.now()}` };
+  },
+
+  clearCache: () => {
+    cachedQuestions = [];
   }
 };

@@ -9,26 +9,32 @@ import { SuggestionCard } from '@/components/dashboard/SuggestionCard';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { dashboardService } from '@/services/dashboardService';
-import { CURRENT_USER } from '@/services/mockData';
+import { profileService } from '@/services/profileService';
 
 export function CareerDashboard() {
   const [metrics, setMetrics] = useState<ReadinessMetric[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [projects, setProjects] = useState<ProjectPreview[]>([]);
+  const [userName, setUserName] = useState('User');
 
   useEffect(() => {
     dashboardService.getReadinessMetrics().then(setMetrics);
     dashboardService.getRecentActivity().then(setActivity);
     dashboardService.getSuggestions().then(setSuggestions);
     dashboardService.getProjectPreviews().then(setProjects);
+    profileService.getProfile().then(u => {
+      if (u && u.name) {
+        setUserName(u.name.split(' ')[0]);
+      }
+    });
   }, []);
 
   return (
     <AppLayout header={{ showSearch: true, searchPlaceholder: 'Search jobs, skills...' }}>
       <div className="px-4 md:px-container-padding py-10 flex flex-col gap-section-margin">
         <SectionHeading
-          title={`Welcome back, ${CURRENT_USER.name.split(' ')[0]}`}
+          title={`Welcome back, ${userName}`}
           description="Here's your career readiness snapshot for today."
         />
 

@@ -59,7 +59,7 @@ export const dashboardService = {
         id: `proj-${idx}`,
         name: proj.title,
         status: 'Recommended',
-        tasksLeft: proj.estimated_hours ? Math.ceil(proj.estimated_hours / 5) : 3,
+        tasksLeft: proj.difficulty === 'Beginner' ? 4 : proj.difficulty === 'Intermediate' ? 8 : 12,
         progress: 25,
       }));
     } catch (e) {

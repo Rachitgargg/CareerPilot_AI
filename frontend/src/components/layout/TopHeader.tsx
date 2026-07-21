@@ -1,7 +1,15 @@
 import { type ReactNode, useState, useEffect } from 'react';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, UploadCloud } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { profileService } from '@/services/profileService';
+import { dashboardService } from '@/services/dashboardService';
+import { roadmapService } from '@/services/roadmapService';
+import { interviewService } from '@/services/interviewService';
+import { jobsService } from '@/services/jobsService';
+import { chatService } from '@/services/chatService';
+import { getSessionId } from '@/services/api/api';
 
 export interface TopHeaderProps {
   title?: string;
@@ -25,6 +33,8 @@ export function TopHeader({
   onMenuClick,
 }: TopHeaderProps) {
   const [initial, setInitial] = useState('U');
+  const navigate = useNavigate();
+  const hasSession = !!getSessionId();
 
   useEffect(() => {
     profileService.getProfile().then(u => {
@@ -33,6 +43,16 @@ export function TopHeader({
       }
     }).catch(() => {});
   }, []);
+
+  const handleReupload = () => {
+    localStorage.removeItem('careerpilot_session_id');
+    dashboardService.clearCache?.();
+    roadmapService.clearCache?.();
+    interviewService.clearCache?.();
+    jobsService.clearCache?.();
+    chatService.clearChat?.();
+    navigate('/resume-upload');
+  };
 
   return (
     <header className="bg-background flex justify-between items-center w-full h-20 px-4 md:px-container-padding sticky top-0 z-40">
@@ -58,6 +78,11 @@ export function TopHeader({
           </div>
         )}
         {actions}
+        {hasSession && (
+          <Button variant="outline" size="sm" onClick={handleReupload} className="mr-2">
+            <UploadCloud size={14} className="mr-1" /> Re-upload Resume
+          </Button>
+        )}
         <button
           aria-label="Notifications"
           className="text-primary hover:opacity-80 transition-opacity p-2 relative"

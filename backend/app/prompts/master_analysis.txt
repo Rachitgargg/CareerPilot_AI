@@ -25,16 +25,16 @@ EXPECTED JSON SCHEMA:
   "project_recommendations": [
     {{
       "title": "Project Title",
-      "description": "Detailed description of a recommended portfolio project to build (focus on AI, ML, or modern software development as relevant)",
+      "description": "Comprehensive project brief explaining exactly WHAT the project is, and a step-by-step implementation guide detailing HOW the user should build it (architecture, modules, database schema if applicable, and coding milestones).",
       "difficulty": "Beginner / Intermediate / Advanced",
       "technologies": ["List of modern technologies to use in the project"],
-      "reason": "Specific explanation of how building this project fills a gap in their career profile"
+      "reason": "Specific explanation of how building this project fills a gap in their career profile and guides them on the implementation path."
     }}
   ],
   "learning_roadmap": {{
-    "next_30_days": ["Actionable goals and learning topics for the next 30 days"],
-    "next_90_days": ["Broader goals and topics for the next 90 days"],
-    "long_term": ["Long-term career development goals and continuous learning paths"]
+    "next_30_days": ["Highly detailed, actionable learning goals and topics for the next 30 days. For each topic, specify exactly what resources, subtopics, or exercises to practice (e.g. 'Practice 15 recursion problems on Leetcode' instead of just 'recursion')"],
+    "next_90_days": ["Actionable and specific technical learning goals and topics for the next 90 days. For each milestone, describe how to validate understanding (e.g. 'build a mini CRUD backend with FastAPI and SQLite')"],
+    "long_term": ["Detailed, continuous learning topics for long-term career growth, including specific advanced libraries, concepts, or system design architectures to study"]
   }},
   "career_recommendations": ["Actionable advice regarding networking, job search strategy, and positioning"],
   "interview_focus": ["Core technical and behavioral topics the user should study for interviews"]
