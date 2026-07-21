@@ -115,6 +115,7 @@ export const JOBS: Job[] = [
     description:
       'Strong overlap with your React and TypeScript experience. Requires learning GraphQL, which aligns with your stated 3-month goals.',
     stage: 'saved',
+    url: 'https://vercel.com/careers',
   },
   {
     id: 'job-2',
@@ -129,6 +130,7 @@ export const JOBS: Job[] = [
     postedAt: '5d ago',
     description: 'A strong design-systems focused role within the Travel org.',
     stage: 'applied',
+    url: 'https://careers.airbnb.com',
   },
   {
     id: 'job-3',
@@ -143,6 +145,7 @@ export const JOBS: Job[] = [
     postedAt: '1w ago',
     description: 'Own core checkout surfaces used by millions of merchants.',
     stage: 'saved',
+    url: 'https://stripe.com/jobs',
   },
 ];
 

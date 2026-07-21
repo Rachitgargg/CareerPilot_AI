@@ -7,6 +7,7 @@ CRITICAL INSTRUCTIONS:
 4. Never invent or hallucinate facts that are not present. If information is missing, focus your recommendations on realistic, constructive steps the user can take to fill the gap.
 5. In your learning roadmap, define constructive, clear milestones.
 6. Provide specific, real-world tech stack recommendations (e.g. recommend FastAPI rather than just "backend frameworks").
+7. Provide exactly 3 distinct project recommendations in "project_recommendations" (one Beginner, one Intermediate, and one Advanced) to offer the user multiple project choices.
 
 EXPECTED JSON SCHEMA:
 {{

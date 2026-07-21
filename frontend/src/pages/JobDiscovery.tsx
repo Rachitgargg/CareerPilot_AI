@@ -189,9 +189,14 @@ export function JobDiscovery() {
                 
                 if (isValid && url) {
                   return (
-                    <Button onClick={() => window.open(url, '_blank')}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-lg bg-[#2b2b2b] hover:bg-[#404040] text-white px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02]"
+                    >
                       <Globe size={16} className="mr-1.5" /> Apply Direct
-                    </Button>
+                    </a>
                   );
                 } else {
                   return (
