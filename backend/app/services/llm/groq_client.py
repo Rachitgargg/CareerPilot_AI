@@ -27,7 +27,6 @@ class GroqClient:
         primary_model = settings.GROQ_MODEL
         fallback_models = [
             primary_model,
-            "llama-3.1-70b-versatile",
             "mixtral-8x7b-32768",
             "llama-3.1-8b-instant",
             "llama3-8b-8192"
@@ -55,21 +54,9 @@ class GroqClient:
                 logger.info(f"Groq API completion call completed successfully using model={model}.")
                 return content
             except Exception as e:
-                err_msg = str(e).lower()
-                is_rate_limit = (
-                    "rate_limit" in err_msg or 
-                    "429" in err_msg or 
-                    "rate limit" in err_msg or 
-                    "limit reached" in err_msg or 
-                    type(e).__name__ == "RateLimitError"
-                )
-                if is_rate_limit:
-                    logger.warning(f"Rate limit or 429 hit for model {model}. Error: {str(e)}. Trying next fallback...")
-                    last_error = e
-                    continue
-                else:
-                    logger.error(f"Groq chat completion failed for model {model} with non-rate-limit error: {str(e)}")
-                    raise e
+                logger.warning(f"Groq invocation failed for model {model} (Error: {str(e)}). Trying next fallback...")
+                last_error = e
+                continue
                     
         logger.error(f"All Groq fallback models exhausted. Final error: {str(last_error)}")
         raise last_error

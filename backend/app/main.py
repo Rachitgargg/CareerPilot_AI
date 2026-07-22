@@ -50,6 +50,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def read_root():
+    return {
+        "message": "Welcome to the CareerPilot AI Backend API Service!",
+        "documentation": "/docs",
+        "health": "/health"
+    }
+
 # Register routes
 app.include_router(health.router)
 app.include_router(upload.router)
