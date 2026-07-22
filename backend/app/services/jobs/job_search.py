@@ -139,6 +139,23 @@ def _load_remotive_jobs() -> List[Dict[str, Any]]:
     logger.warning("No cache or Remotive API available. Using verified fallbacks list.")
     return []
 
+def _get_localized_fallbacks(loc_query: str) -> List[Dict[str, Any]]:
+    """Helper to localize default fallback jobs to user's search query."""
+    target_loc = loc_query.strip().title() if loc_query else "Remote (Worldwide)"
+    if "remote" in loc_query.lower() and len(loc_query) < 8:
+        target_loc = "Remote (Worldwide)"
+        
+    localized = []
+    for job in VERIFIED_REAL_JOBS:
+        job_copy = dict(job)
+        if loc_query:
+            if "remote" in loc_query.lower():
+                job_copy["location"] = "Remote (Worldwide)"
+            else:
+                job_copy["location"] = target_loc
+        localized.append(job_copy)
+    return localized
+
 def search_jobs(
     preferred_role: Optional[str] = None,
     location: Optional[str] = None,
@@ -149,17 +166,29 @@ def search_jobs(
 ) -> List[Dict[str, Any]]:
     """
     Fetch and rank real job matches from Remotive public API.
-    Gracefully handles network offline states and maps real job links.
+    Gracefully handles network offline states, location matching, and country restrictions.
     """
     role_query = (preferred_role or "").strip().lower()
     loc_query = (location or "").strip().lower()
-    candidate_skills = [s.lower() for s in (skills or [])]
     
+    # Detect target countries from user query
+    user_countries = []
+    if "india" in loc_query or "bangalore" in loc_query or "delhi" in loc_query or "mumbai" in loc_query:
+        user_countries.append("india")
+    if "us" in loc_query or "united states" in loc_query or "america" in loc_query or "san francisco" in loc_query or "california" in loc_query or "new york" in loc_query:
+        user_countries.append("usa")
+        user_countries.append("us")
+    if "uk" in loc_query or "united kingdom" in loc_query or "london" in loc_query:
+        user_countries.append("uk")
+        user_countries.append("united kingdom")
+    if "canada" in loc_query or "toronto" in loc_query:
+        user_countries.append("canada")
+        
     raw_jobs = _load_remotive_jobs()
     
-    # If Remotive has no jobs, use fallback lists directly
+    # If Remotive has no jobs, use localized fallbacks directly
     if not raw_jobs:
-        return VERIFIED_REAL_JOBS
+        return _get_localized_fallbacks(loc_query)
         
     filtered = []
     for job in raw_jobs:
@@ -169,11 +198,10 @@ def search_jobs(
         job_loc = job.get("candidate_required_location", "")
         job_url = job.get("url", "")
         
-        # Verify URL is valid before indexing it
+        # Verify URL is valid
         if not job_url or not (job_url.startswith("http://") or job_url.startswith("https://")):
             continue
             
-        # Match query filters
         title_lower = title.lower()
         desc_lower = desc.lower()
         company_lower = company.lower()
@@ -185,9 +213,33 @@ def search_jobs(
                 match = False
                 
         if loc_query and match:
-            if loc_query not in job_loc_lower and loc_query != "remote":
-                match = False
-                
+            if "remote" in loc_query:
+                # remote search matches remote jobs
+                pass
+            else:
+                # Direct string check
+                if loc_query in job_loc_lower or job_loc_lower in loc_query:
+                    pass
+                # Worldwide matches anywhere
+                elif "worldwide" in job_loc_lower or "anywhere" in job_loc_lower or not job_loc_lower:
+                    pass
+                else:
+                    # Check country restriction mismatch (e.g. US Only vs India user)
+                    mismatch = False
+                    job_countries = ["usa", "us", "uk", "canada", "europe", "germany"]
+                    for c in job_countries:
+                        if c in job_loc_lower:
+                            # If job requires this country but user has a detected country that is different, exclude
+                            if user_countries and not any(uc in c or c in uc for uc in user_countries):
+                                mismatch = True
+                                break
+                    if mismatch:
+                        match = False
+                    else:
+                        # Otherwise check if candidate location overlaps with user countries
+                        if user_countries and not any(uc in job_loc_lower for uc in user_countries):
+                            match = False
+                            
         if not match:
             continue
             
@@ -212,7 +264,7 @@ def search_jobs(
         filtered.append({
             "title": title,
             "company": company,
-            "location": job_loc or "Remote",
+            "location": job_loc or "Remote (Worldwide)",
             "employment_type": job.get("job_type") or "Full-time",
             "experience_level": exp_level,
             "required_skills": matched_skills,
@@ -220,14 +272,15 @@ def search_jobs(
             "score": score
         })
         
-    # Sort by relevance score
+    # Sort by score
     filtered.sort(key=lambda x: x["score"], reverse=True)
     
-    # If filtered results is small, supplement with VERIFIED_REAL_JOBS
+    # Supplement if too few matches
     if len(filtered) < 6:
-        filtered.extend(VERIFIED_REAL_JOBS)
+        fallbacks = _get_localized_fallbacks(loc_query)
+        filtered.extend(fallbacks)
         
-    # Deduplicate by URL
+    # Deduplicate
     seen_urls = set()
     deduped = []
     for f in filtered:

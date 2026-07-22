@@ -39,7 +39,7 @@ export function Footer() {
         <div className="text-center md:text-left">
           <span className="font-headline-md text-headline-md text-primary">CareerPilot AI</span>
           <p className="font-metadata text-metadata text-on-surface-variant mt-2">
-            © 2024 CareerPilot AI. All rights reserved.
+            © 2026 CareerPilot AI. All rights reserved.
           </p>
         </div>
         <nav className="flex flex-wrap justify-center gap-6">

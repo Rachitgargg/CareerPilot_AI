@@ -8,6 +8,7 @@ CRITICAL INSTRUCTIONS:
 5. In your learning roadmap, define constructive, clear milestones.
 6. Provide specific, real-world tech stack recommendations (e.g. recommend FastAPI rather than just "backend frameworks").
 7. Provide exactly 3 distinct project recommendations in "project_recommendations" (one Beginner, one Intermediate, and one Advanced) to offer the user multiple project choices.
+8. The recommended projects MUST be dynamically curated and highly personalized based on this specific candidate's unique resume facts, target roles, and missing skills. DO NOT recommend standard generic projects (like "StudySphere" or "BuildMate") unless they are a direct, perfect match for this candidate's specific resume and target career direction. The project titles, technologies, and specifications must be completely tailored to their profile facts.
 
 EXPECTED JSON SCHEMA:
 {{
