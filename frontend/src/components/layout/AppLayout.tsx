@@ -1,9 +1,11 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { Footer } from './Footer';
 import { FloatingChatButton } from './FloatingChatButton';
 import { TopHeader, type TopHeaderProps } from './TopHeader';
+import { getSessionId } from '@/services/api/api';
 
 export interface AppLayoutProps {
   children: ReactNode;
@@ -27,6 +29,16 @@ export function AppLayout({
   fullBleed = false,
   contentClassName = '',
 }: AppLayoutProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const sessionId = getSessionId();
+    const publicPaths = ['/', '/onboarding', '/resume-upload'];
+    if (!sessionId && !publicPaths.includes(location.pathname)) {
+      navigate('/resume-upload');
+    }
+  }, [location.pathname, navigate]);
   return (
     <div className="bg-background text-on-surface font-body-md min-h-screen flex">
       <Sidebar />

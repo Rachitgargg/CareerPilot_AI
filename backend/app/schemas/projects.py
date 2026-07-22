@@ -20,3 +20,5 @@ class ActiveProject(BaseModel):
     technologies: List[str] = Field(default_factory=list, description="Technologies to build the project")
     status: str = Field(default="idle", description="Project status: idle / in_progress / completed")
     milestones: List[ProjectMilestone] = Field(default_factory=list, description="Structured milestones roadmap")
+    imageUrl: Optional[str] = Field(default=None, description="Project image display url")
+    estimatedHours: Optional[int] = Field(default=None, description="Estimated hours to complete project")
